@@ -1,38 +1,47 @@
 <?php
 // Frontend/stream_file.php
-// Matikan semua error reporting agar tidak merusak binary
+
+// 1. Matikan error reporting agar warning PHP tidak merusak binary PDF
 error_reporting(0);
 ini_set('display_errors', 0);
 
-require '../Backend/config.php';
-
-// Bersihkan buffer output sebelum script jalan
+// 2. Bersihkan buffer output sebelum script jalan (PENTING)
 if (ob_get_level()) ob_end_clean();
 
-if (!isset($_GET['id'])) {
-    die("ID tidak ditemukan");
-}
+require '../Backend/config.php';
 
+// 3. Bersihkan buffer lagi setelah require config (Jaga-jaga ada spasi di config.php)
+ob_clean();
+
+if (!isset($_GET['id'])) {
+    die("ID Kosong");
+}
 $id = (int)$_GET['id'];
 
-// Ambil data
+// Ambil data binary
 $query = "SELECT file_path FROM books WHERE id = $id";
 $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
 
 if ($book && !empty($book['file_path'])) {
-    $file_content = $book['file_path'];
-    $size = strlen($file_content);
+    $size = strlen($book['file_path']);
 
-    // Header lengkap untuk PDF
+    // --- HEADER UTAMA ---
     header("Content-Type: application/pdf");
-    header("Content-Length: " . $size); // Memberitahu browser ukuran file
-    header("Content-Disposition: inline; filename=\"dokumen_pustaka.pdf\"");
+    header("Content-Length: " . $size);
+
+    // KUNCI: Gunakan 'inline' agar terbuka di browser (bukan 'attachment')
+    header("Content-Disposition: inline; filename=\"document.pdf\"");
+
+    // Header Cache (Agar browser tidak menyimpan file rusak/lama)
     header("Cache-Control: private, max-age=0, must-revalidate");
     header("Pragma: public");
 
-    echo $file_content;
+    // Kirim Binary
+    echo $book['file_path'];
     exit;
 } else {
-    echo "File PDF kosong atau rusak di database.";
+    // Jika data kosong, tampilkan pesan teks
+    header("Content-Type: text/plain");
+    echo "File PDF kosong atau tidak ditemukan di database.";
 }
