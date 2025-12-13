@@ -12,90 +12,111 @@ $message = '';
 $error_msg = '';
 
 
+// --- GANTI TOTAL BLOK LOGIKA SIMPAN BUKU DENGAN INI ---
 if (isset($_POST['save_book'])) {
     $mode = $_POST['mode'];
     $book_id = isset($_POST['book_id']) ? (int)$_POST['book_id'] : 0;
 
-    $title = mysqli_real_escape_string($conn, $_POST['title']);
-    $author = mysqli_real_escape_string($conn, $_POST['author']);
+    $title = $_POST['title'];
+    $author = $_POST['author'];
     $year = (int)$_POST['year'];
-    $type = mysqli_real_escape_string($conn, $_POST['type']);
-    $description = mysqli_real_escape_string($conn, $_POST['description']);
-
+    $type = $_POST['type'];
+    $description = $_POST['description'];
     $selected_genres = isset($_POST['genres']) ? $_POST['genres'] : [];
 
     if (empty($selected_genres)) {
         $error_msg = "Wajib memilih minimal satu genre!";
     } else {
-
-        $cover_sql_val = "NULL";
-        $file_sql_val = "NULL";
-
+        // 1. BACA FILE KE MEMORY
+        $coverData = null;
         if (isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
-            $imgData = file_get_contents($_FILES['cover']['tmp_name']);
-            $imgData = mysqli_real_escape_string($conn, $imgData);
-            $cover_sql_val = "'$imgData'";
-        } else {
+            $coverData = file_get_contents($_FILES['cover']['tmp_name']);
         }
 
+        $pdfData = null;
         if (isset($_FILES['file_book']) && $_FILES['file_book']['error'] === UPLOAD_ERR_OK) {
             $pdfData = file_get_contents($_FILES['file_book']['tmp_name']);
-            $pdfData = mysqli_real_escape_string($conn, $pdfData);
-            $file_sql_val = "'$pdfData'";
-        } else {
-            if ($mode == 'add' && (!isset($_FILES['file_book']) || $_FILES['file_book']['error'] !== UPLOAD_ERR_OK)) {
-                $error_msg .= "File PDF wajib diupload untuk buku baru! ";
-            }
+        }
+
+        if ($mode == 'add' && $pdfData === null) {
+            $error_msg = "File PDF wajib diupload untuk buku baru!";
         }
 
         if (empty($error_msg)) {
-            if ($mode == 'add') {
-                $query = "INSERT INTO books (title, author, description, cover, file_path, year, type) 
-                          VALUES ('$title', '$author', '$description', $cover_sql_val, $file_sql_val, $year, '$type')";
+            // Inisialisasi variabel NULL untuk binding BLOB
+            $null = null;
 
-                if (mysqli_query($conn, $query)) {
+            if ($mode == 'add') {
+                // Query Insert
+                $sql = "INSERT INTO books (title, author, description, year, type, cover, file_path) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = mysqli_prepare($conn, $sql);
+
+                // Perhatikan tipe datanya: 'b' untuk BLOB
+                // Urutan: title(s), author(s), description(s), year(i), type(s), cover(b), file_path(b)
+                mysqli_stmt_bind_param($stmt, "sssisbb", $title, $author, $description, $year, $type, $null, $null);
+
+                // KIRIM DATA BINARY MENGGUNAKAN SEND_LONG_DATA
+                // Param ke-5 (indeks dimulai dari 0, jadi cover adalah param ke-5)
+                if ($coverData !== null) {
+                    mysqli_stmt_send_long_data($stmt, 5, $coverData);
+                }
+
+                // Param ke-6 (file_path adalah param ke-6)
+                if ($pdfData !== null) {
+                    mysqli_stmt_send_long_data($stmt, 6, $pdfData);
+                }
+
+                if (mysqli_stmt_execute($stmt)) {
                     $new_book_id = mysqli_insert_id($conn);
                     foreach ($selected_genres as $gid) {
                         $gid = (int)$gid;
                         mysqli_query($conn, "INSERT INTO book_genres (book_id, genre_id) VALUES ($new_book_id, $gid)");
                     }
-                    $message = "Buku berhasil ditambahkan ke Database!";
+                    $message = "Buku berhasil disimpan (Metode Long Data)!";
                 } else {
-                    $error_msg = "Database Error (Mungkin file terlalu besar, cek max_allowed_packet): " . mysqli_error($conn);
+                    $error_msg = "Gagal Simpan: " . mysqli_stmt_error($stmt);
                 }
+                mysqli_stmt_close($stmt);
             } else {
-                $update_parts = [
-                    "title='$title'",
-                    "author='$author'",
-                    "description='$description'",
-                    "year=$year",
-                    "type='$type'"
-                ];
+                // --- MODE EDIT (UPDATE) ---
+                // Update Text Data Dulu
+                $stmt = mysqli_prepare($conn, "UPDATE books SET title=?, author=?, description=?, year=?, type=? WHERE id=?");
+                mysqli_stmt_bind_param($stmt, "sssisi", $title, $author, $description, $year, $type, $book_id);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_close($stmt);
 
-                if ($cover_sql_val !== "NULL") {
-                    $update_parts[] = "cover=$cover_sql_val";
-                }
-                if ($file_sql_val !== "NULL") {
-                    $update_parts[] = "file_path=$file_sql_val";
+                // Update Cover (Pakai Long Data)
+                if ($coverData !== null) {
+                    $stmt = mysqli_prepare($conn, "UPDATE books SET cover=? WHERE id=?");
+                    mysqli_stmt_bind_param($stmt, "bi", $null, $book_id);
+                    mysqli_stmt_send_long_data($stmt, 0, $coverData); // Param index 0
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
                 }
 
-                $query = "UPDATE books SET " . implode(', ', $update_parts) . " WHERE id=$book_id";
-
-                if (mysqli_query($conn, $query)) {
-                    mysqli_query($conn, "DELETE FROM book_genres WHERE book_id = $book_id");
-                    foreach ($selected_genres as $gid) {
-                        $gid = (int)$gid;
-                        mysqli_query($conn, "INSERT INTO book_genres (book_id, genre_id) VALUES ($book_id, $gid)");
-                    }
-                    echo "<script>alert('Buku berhasil diperbarui!'); window.location='dashboard-admin.php';</script>";
-                    exit;
-                } else {
-                    $error_msg = "Database Error: " . mysqli_error($conn);
+                // Update PDF (Pakai Long Data)
+                if ($pdfData !== null) {
+                    $stmt = mysqli_prepare($conn, "UPDATE books SET file_path=? WHERE id=?");
+                    mysqli_stmt_bind_param($stmt, "bi", $null, $book_id);
+                    mysqli_stmt_send_long_data($stmt, 0, $pdfData); // Param index 0
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
                 }
+
+                // Update Genre
+                mysqli_query($conn, "DELETE FROM book_genres WHERE book_id = $book_id");
+                foreach ($selected_genres as $gid) {
+                    $gid = (int)$gid;
+                    mysqli_query($conn, "INSERT INTO book_genres (book_id, genre_id) VALUES ($book_id, $gid)");
+                }
+
+                echo "<script>alert('Buku berhasil diperbarui!'); window.location='dashboard-admin.php';</script>";
+                exit;
             }
         }
     }
 }
+// --------------------------------------------------------
 
 if (isset($_GET['delete'])) {
     $id = (int)$_GET['delete'];
