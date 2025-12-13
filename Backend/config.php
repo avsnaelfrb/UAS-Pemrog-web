@@ -12,6 +12,8 @@ if (!$conn) {
 
 session_start();
 
+mysqli_query($conn, "SET SESSION sql_mode = ''");
+ini_set('memory_limit', '512M');
 $base_url = "http://localhost/web-perpus-UAS";
 
 function redirect($url)
