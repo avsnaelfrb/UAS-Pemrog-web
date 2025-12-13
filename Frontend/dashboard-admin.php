@@ -1,5 +1,7 @@
 <?php
 require '../Backend/config.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
     header("Location: login.php");
@@ -124,7 +126,7 @@ if (isset($_GET['edit'])) {
 }
 
 $books_query = "
-    SELECT id, title, author, year, type, cover, 
+    SELECT b.id, b.title, b.author, b.year, b.type, b.cover, 
     CASE WHEN file_path IS NOT NULL AND LENGTH(file_path) > 0 THEN 1 ELSE 0 END as file_exists,
     GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
     FROM books b 
