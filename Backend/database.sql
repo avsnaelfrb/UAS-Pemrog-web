@@ -47,3 +47,6 @@ CREATE TABLE IF NOT EXISTS book_genres (
 -- Seed Data
 INSERT IGNORE INTO genres (name) VALUES 
 ('Fiksi'), ('Teknologi'), ('Sains'), ('Sejarah'), ('Bisnis'), ('Desain');
+
+ALTER TABLE books MODIFY file_path LONGBLOB;
+ALTER TABLE books MODIFY cover LONGBLOB;
