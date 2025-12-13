@@ -1,0 +1,49 @@
+-- Buat Database
+CREATE DATABASE IF NOT EXISTS elibrary_db;
+USE elibrary_db;
+
+-- Tabel Users
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    nim VARCHAR(50) NOT NULL,
+    role ENUM('ADMIN', 'USER') DEFAULT 'USER',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabel Genres
+CREATE TABLE IF NOT EXISTS genres (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL
+);
+
+-- Tabel Books (MODIFIKASI UNTUK BLOB)
+-- Kolom 'cover' dan 'file_path' diubah menjadi LONGBLOB untuk menyimpan data biner
+CREATE TABLE IF NOT EXISTS books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    cover LONGBLOB,           -- Menyimpan data gambar binary
+    file_path LONGBLOB,       -- Menyimpan data PDF binary (Meskipun namanya file_path, isinya nanti file asli)
+    
+    year INT,
+    type ENUM('BOOK', 'JOURNAL', 'ARTICLE') DEFAULT 'BOOK',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabel Penghubung Book - Genres
+CREATE TABLE IF NOT EXISTS book_genres (
+    book_id INT,
+    genre_id INT,
+    PRIMARY KEY (book_id, genre_id),
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+);
+
+-- Seed Data
+INSERT IGNORE INTO genres (name) VALUES 
+('Fiksi'), ('Teknologi'), ('Sains'), ('Sejarah'), ('Bisnis'), ('Desain');
