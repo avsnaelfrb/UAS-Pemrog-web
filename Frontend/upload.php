@@ -1,4 +1,10 @@
 <?php
+// --- BARIS DEBUGGING (Hapus nanti jika sudah fix) ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// ----------------------------------------------------
+
 require '../Backend/config.php';
 
 // CEK KHUSUS: Hanya Penerbit
@@ -11,53 +17,71 @@ $user_id = $_SESSION['user_id'];
 $message = '';
 $error_msg = '';
 
-// --- LOGIKA UPLOAD KARYA (VERSI BARU: SYSTEM STORAGE) ---
+// --- LOGIKA UPLOAD KARYA ---
 if (isset($_POST['upload_karya'])) {
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $author = mysqli_real_escape_string($conn, $_POST['author']);
     $year = (int)$_POST['year'];
-    $type = $_POST['type'];
+    $type = $_POST['type']; // BOOK, JOURNAL, ARTICLE
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $selected_genres = isset($_POST['genres']) ? $_POST['genres'] : [];
 
-    // 1. Tentukan Folder Tujuan (Naik satu level dari Frontend, lalu masuk uploads)
-    $dirBooks = "../uploads/books";
-    $dirCovers = "../uploads/covers";
-
-    // 2. Proses Upload Cover (Opsional)
-    $coverFilename = null;
-    if (isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['cover'], $dirCovers);
-        if ($uploadResult) {
-            $coverFilename = $uploadResult;
-        } else {
-            $error_msg = "Gagal mengupload cover. Cek permission folder.";
-        }
-    }
-
-    // 3. Proses Upload PDF (Wajib)
+    // Init Variabel (Penting agar tidak undefined)
     $pdfFilename = null;
-    if (isset($_FILES['file_book']) && $_FILES['file_book']['error'] === UPLOAD_ERR_OK) {
-        $uploadResult = uploadFile($_FILES['file_book'], $dirBooks);
-        if ($uploadResult) {
-            $pdfFilename = $uploadResult;
+    $articleLink = null;
+    $coverFilename = null;
+
+    // 1. Validasi Input Berdasarkan Tipe
+    if ($type == 'ARTICLE') {
+        if (!empty($_POST['link'])) {
+            $articleLink = mysqli_real_escape_string($conn, $_POST['link']);
         } else {
-            $error_msg = "Gagal mengupload file PDF. Pastikan folder uploads/books ada dan writable.";
+            $error_msg = "Link Artikel wajib diisi!";
         }
     } else {
-        $error_msg = "File PDF wajib dipilih!";
+        // Buku/Jurnal wajib PDF
+        $dirBooks = "../uploads/books";
+        if (isset($_FILES['file_book']) && $_FILES['file_book']['error'] === UPLOAD_ERR_OK) {
+            // Cek apakah fungsi uploadFile ada
+            if (!function_exists('uploadFile')) {
+                die("FATAL ERROR: Fungsi uploadFile() tidak ditemukan. Update file Backend/config.php Anda!");
+            }
+            $uploadResult = uploadFile($_FILES['file_book'], $dirBooks);
+            if ($uploadResult) {
+                $pdfFilename = $uploadResult;
+            } else {
+                $error_msg = "Gagal mengupload file PDF ke server.";
+            }
+        } else {
+            $error_msg = "File PDF wajib dipilih untuk Buku/Jurnal!";
+        }
     }
 
-    // 4. Simpan ke Database jika tidak ada error dan PDF berhasil terupload
-    if (!$error_msg && $pdfFilename) {
-        // Query Insert: Sekarang kolom cover & file_path menyimpan STRING (nama file), bukan BLOB
-        $query = "INSERT INTO books (title, author, description, year, type, cover, file_path, status, uploaded_by) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)";
+    // 2. Upload Cover (Opsional)
+    $dirCovers = "../uploads/covers";
+    if (!$error_msg && isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
+        if (!function_exists('uploadFile')) {
+            die("FATAL ERROR: Fungsi uploadFile() tidak ditemukan. Update file Backend/config.php Anda!");
+        }
+        $uploadResult = uploadFile($_FILES['cover'], $dirCovers);
+        if ($uploadResult) $coverFilename = $uploadResult;
+    }
+
+    // 3. Simpan ke Database
+    if (!$error_msg) {
+        // Debugging Query
+        $query = "INSERT INTO books (title, author, description, year, type, cover, file_path, link, status, uploaded_by) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)";
 
         $stmt = mysqli_prepare($conn, $query);
 
-        // sssisssi -> string, string, string, int, string, string (nama file), string (nama file), int
-        mysqli_stmt_bind_param($stmt, "sssisssi", $title, $author, $description, $year, $type, $coverFilename, $pdfFilename, $user_id);
+        if (!$stmt) {
+            // Tampilkan error MySQL jika prepare gagal
+            die("DATABASE ERROR (Prepare): " . mysqli_error($conn));
+        }
+
+        // sssissssi -> string, string, string, int, string, string, string, string, int
+        mysqli_stmt_bind_param($stmt, "sssissssi", $title, $author, $description, $year, $type, $coverFilename, $pdfFilename, $articleLink, $user_id);
 
         if (mysqli_stmt_execute($stmt)) {
             $new_id = mysqli_insert_id($conn);
@@ -69,18 +93,20 @@ if (isset($_POST['upload_karya'])) {
                     mysqli_query($conn, "INSERT INTO book_genres VALUES ($new_id, $gid)");
                 }
             }
-
-            $message = "Karya berhasil diupload! Silakan tunggu moderasi Admin.";
+            $message = "Karya berhasil diupload! Tunggu moderasi Admin.";
         } else {
-            $error_msg = "Gagal menyimpan data ke database: " . mysqli_error($conn);
-            // Opsional: Hapus file yang sudah terlanjur ke-upload jika DB gagal (Clean up)
-            if ($coverFilename) unlink($dirCovers . '/' . $coverFilename);
-            if ($pdfFilename) unlink($dirBooks . '/' . $pdfFilename);
+            // Tampilkan error jika execute gagal
+            $error_msg = "DATABASE ERROR (Execute): " . mysqli_stmt_error($stmt);
+
+            // Hapus file jika gagal DB agar tidak nyampah
+            if ($coverFilename) @unlink($dirCovers . '/' . $coverFilename);
+            if ($pdfFilename) @unlink($dirBooks . '/' . $pdfFilename);
         }
+        mysqli_stmt_close($stmt);
     }
 }
 
-// Ambil Data User & Genre (Tidak Berubah)
+// Data User & Genre
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
@@ -112,7 +138,6 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
             border-radius: 4px;
         }
 
-        /* Scrollbar ungu muda */
         .genre-scroll::-webkit-scrollbar-thumb:hover {
             background: #c084fc;
         }
@@ -121,24 +146,21 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
 <body class="bg-gray-50 font-sans text-gray-800">
 
-    <!-- Notifikasi -->
     <?php if ($message): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
             ✅ <?= $message ?>
         </div>
     <?php endif; ?>
     <?php if ($error_msg): ?>
-        <div onclick="this.remove()" class="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer">
             ❌ <?= $error_msg ?>
         </div>
     <?php endif; ?>
 
-    <!-- OVERLAY MOBILE -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
 
     <div class="flex min-h-screen">
-
-        <!-- SIDEBAR (Konsisten dengan Dashboard Penerbit) -->
+        <!-- SIDEBAR -->
         <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition h-full overflow-y-auto">
             <div class="p-6 border-b flex flex-col items-center relative">
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
@@ -150,72 +172,40 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
                 <h1 class="text-xl font-bold text-purple-900">Publisher</h1>
                 <p class="text-xs text-gray-500 mt-1">Halo, <?= htmlspecialchars($current_user['name']) ?></p>
             </div>
-
             <nav class="p-4 space-y-2">
-                <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>📚</span> Katalog
-                </a>
-
-                <!-- ADDED: Menu Terbitan Saya Baru -->
-                <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>📂</span> Terbitan Saya
-                </a>
-
-                <!-- Menu Upload Aktif -->
-                <a href="upload.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm">
-                    <span>📤</span> Upload Karya
-                </a>
-
-                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition">
-                    <span>🕒</span> Riwayat
-                </a>
-
-                <!-- ADDED: Menu Koleksi -->
-                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>🔖</span> Koleksi
-                </a>
-
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition">
-                    <span>⚙️</span> Profile
-                </a>
-                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
-                    <span>🚪</span> Keluar
-                </a>
+                <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>📚</span> Katalog</a>
+                <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>📂</span> Terbitan Saya</a>
+                <a href="upload.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm"><span>📤</span> Upload Karya</a>
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition"><span>🕒</span> Riwayat</a>
+                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>🔖</span> Koleksi</a>
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition"><span>⚙️</span> Profil</a>
+                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t"><span>🚪</span> Keluar</a>
             </nav>
         </aside>
 
         <!-- MAIN CONTENT -->
         <main class="flex-1 lg:ml-64 p-4 lg:p-8 transition-all duration-300">
-
-            <!-- Header Mobile -->
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                        </svg>
-                    </button>
+                        </svg></button>
                     <h1 class="font-bold text-purple-900 text-lg">Upload Karya</h1>
                 </div>
-                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm border border-purple-200">✒️</div>
             </div>
 
             <div class="max-w-4xl mx-auto">
-                <!-- Info Header -->
                 <div class="mb-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-2">📤 Upload Karya Baru</h2>
-                    <p class="text-gray-500">Kontribusi Anda akan dimoderasi oleh Admin sebelum diterbitkan.</p>
+                    <p class="text-gray-500">Pilih tipe dokumen yang sesuai: Buku, Jurnal, atau Artikel.</p>
                 </div>
 
-                <!-- Form Card -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
-                    <!-- Alert Info -->
                     <div class="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-start gap-3">
                         <span class="text-purple-600 text-xl">ℹ️</span>
                         <p class="text-sm text-purple-800 leading-relaxed">
-                            Pastikan karya Anda orisinal dan tidak mengandung unsur SARA atau konten ilegal.
-                            Status awal buku adalah <span class="font-bold">PENDING</span>.
+                            <b>Buku & Jurnal:</b> Wajib upload file PDF.<br>
+                            <b>Artikel:</b> Cukup masukkan Link URL artikel.
                         </p>
                     </div>
 
@@ -224,33 +214,27 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
                         <!-- Judul -->
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Judul Buku <span class="text-red-500">*</span></label>
-                            <input type="text" name="title" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition placeholder-gray-400"
-                                placeholder="Masukkan judul lengkap karya Anda...">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Judul Karya <span class="text-red-500">*</span></label>
+                            <input type="text" name="title" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 outline-none transition" placeholder="Judul lengkap...">
                         </div>
 
-                        <!-- Grid: Penulis & Tahun -->
+                        <!-- Penulis & Tahun -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Penulis <span class="text-red-500">*</span></label>
-                                <input type="text" name="author" required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition"
-                                    placeholder="Nama penulis...">
+                                <input type="text" name="author" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 outline-none" placeholder="Nama penulis...">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Tahun Terbit <span class="text-red-500">*</span></label>
-                                <input type="number" name="year" required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition"
-                                    placeholder="YYYY">
+                                <input type="number" name="year" required class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-200 outline-none" placeholder="YYYY">
                             </div>
                         </div>
 
-                        <!-- Grid: Tipe & Genre -->
+                        <!-- Tipe & Genre -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div class="md:col-span-1">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Tipe Dokumen</label>
-                                <select name="type" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition cursor-pointer">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Tipe Dokumen <span class="text-red-500">*</span></label>
+                                <select name="type" id="docType" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-purple-200 outline-none cursor-pointer">
                                     <option value="BOOK">📘 Buku</option>
                                     <option value="JOURNAL">📓 Jurnal</option>
                                     <option value="ARTICLE">📰 Artikel</option>
@@ -276,51 +260,43 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
                         <!-- Sinopsis -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Sinopsis / Deskripsi</label>
-                            <textarea name="description" class="w-full px-4 py-3 border border-gray-300 rounded-xl h-32 focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition placeholder-gray-400 resize-none" placeholder="Tuliskan gambaran singkat tentang karya ini..."></textarea>
+                            <textarea name="description" class="w-full px-4 py-3 border border-gray-300 rounded-xl h-32 focus:ring-2 focus:ring-purple-200 outline-none resize-none" placeholder="Deskripsi singkat..."></textarea>
                         </div>
 
-                        <!-- Upload Area (Tombol Biru & Modern) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                            <!-- PDF Upload -->
-                            <div class="relative group">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">File PDF <span class="text-red-500">*</span></label>
+                        <!-- DYNAMIC INPUT SECTION -->
+                        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 transition-all duration-300">
+                            <!-- 1. Input File PDF (Default) -->
+                            <div id="inputPDF">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Upload File PDF <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input type="file" name="file_book" accept="application/pdf" required
-                                        class="block w-full text-sm text-slate-500
-                                                  file:mr-4 file:py-2.5 file:px-4
-                                                  file:rounded-lg file:border-0
-                                                  file:text-sm file:font-bold
-                                                  file:bg-blue-50 file:text-blue-700
-                                                  hover:file:bg-blue-100
-                                                  cursor-pointer border border-gray-300 rounded-xl p-1.5 transition bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+                                    <input type="file" name="file_book" id="fileBookInput" accept="application/pdf"
+                                        class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-xl p-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
                                 </div>
-                                <p class="text-xs text-gray-400 mt-1">Format .pdf saja</p>
+                                <p class="text-xs text-gray-400 mt-1">Format .pdf untuk Buku atau Jurnal</p>
                             </div>
 
-                            <!-- Cover Upload -->
-                            <div class="relative group">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Cover (Opsional)</label>
-                                <div class="relative">
-                                    <input type="file" name="cover" accept="image/*"
-                                        class="block w-full text-sm text-slate-500
-                                                  file:mr-4 file:py-2.5 file:px-4
-                                                  file:rounded-lg file:border-0
-                                                  file:text-sm file:font-bold
-                                                  file:bg-blue-50 file:text-blue-700
-                                                  hover:file:bg-blue-100
-                                                  cursor-pointer border border-gray-300 rounded-xl p-1.5 transition bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
-                                </div>
-                                <p class="text-xs text-gray-400 mt-1">Format .jpg, .png, .jpeg</p>
+                            <!-- 2. Input Link Artikel (Hidden by default) -->
+                            <div id="inputLink" class="hidden">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Link Artikel <span class="text-red-500">*</span></label>
+                                <input type="url" name="link" id="linkInput"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-200 focus:border-green-400 outline-none transition placeholder-gray-400"
+                                    placeholder="https://contoh-website.com/artikel-anda">
+                                <p class="text-xs text-gray-400 mt-1">Masukkan URL lengkap ke artikel sumber</p>
                             </div>
                         </div>
 
-                        <!-- Submit Button (Ungu) -->
+                        <!-- Cover Upload -->
+                        <div class="relative group mt-4">
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Cover (Opsional)</label>
+                            <input type="file" name="cover" accept="image/*"
+                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-xl p-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+                        </div>
+
+                        <!-- Submit Button -->
                         <div class="pt-6 border-t border-gray-100 flex justify-end gap-3">
-                            <a href="dashboard-publisher.php" class="px-6 py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
-                                Batal
-                            </a>
+                            <a href="dashboard-publisher.php" class="px-6 py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Batal</a>
                             <button type="submit" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-indigo-700 transition transform hover:-translate-y-0.5 flex items-center gap-2">
-                                <span>🚀</span> Request Upload
+                                <span>🚀</span> Upload Karya
                             </button>
                         </div>
                     </form>
@@ -330,6 +306,29 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
     </div>
 
     <script>
+        const docType = document.getElementById('docType');
+        const inputPDF = document.getElementById('inputPDF');
+        const inputLink = document.getElementById('inputLink');
+        const fileBookInput = document.getElementById('fileBookInput');
+        const linkInput = document.getElementById('linkInput');
+
+        function toggleInput() {
+            if (docType.value === 'ARTICLE') {
+                inputPDF.classList.add('hidden');
+                inputLink.classList.remove('hidden');
+                fileBookInput.required = false;
+                linkInput.required = true;
+            } else {
+                inputPDF.classList.remove('hidden');
+                inputLink.classList.add('hidden');
+                fileBookInput.required = true;
+                linkInput.required = false;
+            }
+        }
+
+        docType.addEventListener('change', toggleInput);
+        toggleInput();
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
