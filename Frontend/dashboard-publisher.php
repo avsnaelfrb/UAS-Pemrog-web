@@ -140,40 +140,6 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 </a>
             </div>
 
-            <!-- Section 1: Karya Anda (Status Pending/Approved) -->
-            <?php
-            $my_books = mysqli_query($conn, "SELECT * FROM books WHERE uploaded_by=$user_id ORDER BY created_at DESC");
-            if (mysqli_num_rows($my_books) > 0):
-            ?>
-                <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                    <span>📂</span> Karya Anda
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-                    <?php while ($mb = mysqli_fetch_assoc($my_books)): ?>
-                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-3 items-center hover:shadow-md hover:border-purple-200 transition duration-300 group">
-                            <?php
-                            $coverPathMb = '../uploads/covers/' . $mb['cover'];
-                            if (!empty($mb['cover']) && file_exists($coverPathMb)):
-                            ?>
-                                <img src="<?= $coverPathMb ?>" class="w-14 h-20 object-cover rounded shadow-sm group-hover:scale-105 transition duration-300">
-                            <?php else: ?>
-                                <div class="w-14 h-20 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
-                            <?php endif; ?>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-purple-700 transition"><?= htmlspecialchars($mb['title']) ?></h4>
-                                <p class="text-xs text-gray-500 mb-2"><?= $mb['created_at'] ?></p>
-                                <?= getStatusBadge($mb['status']) ?>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Section 2: Katalog Umum -->
-            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span>📚</span> Katalog Perpustakaan
-            </h3>
-
             <!-- SEARCH & FILTER BAR (ADAPTASI UNGU) -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col gap-4 relative z-10">
                 <form method="GET" class="flex flex-col md:flex-row gap-4 w-full items-stretch">
@@ -270,6 +236,40 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     </div>
                 <?php endif; ?>
             </div>
+
+            <!-- Section 1: Karya Anda (Status Pending/Approved) -->
+            <?php
+            $my_books = mysqli_query($conn, "SELECT * FROM books WHERE uploaded_by=$user_id ORDER BY created_at DESC");
+            if (mysqli_num_rows($my_books) > 0):
+            ?>
+                <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                    <span>📂</span> Karya Anda
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+                    <?php while ($mb = mysqli_fetch_assoc($my_books)): ?>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-3 items-center hover:shadow-md hover:border-purple-200 transition duration-300 group">
+                            <?php
+                            $coverPathMb = '../uploads/covers/' . $mb['cover'];
+                            if (!empty($mb['cover']) && file_exists($coverPathMb)):
+                            ?>
+                                <img src="<?= $coverPathMb ?>" class="w-14 h-20 object-cover rounded shadow-sm group-hover:scale-105 transition duration-300">
+                            <?php else: ?>
+                                <div class="w-14 h-20 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
+                            <?php endif; ?>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-purple-700 transition"><?= htmlspecialchars($mb['title']) ?></h4>
+                                <p class="text-xs text-gray-500 mb-2"><?= $mb['created_at'] ?></p>
+                                <?= getStatusBadge($mb['status']) ?>
+                            </div>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Section 2: Katalog Umum -->
+            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span>📚</span> Katalog Perpustakaan
+            </h3>
 
             <!-- GRID BUKU -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
