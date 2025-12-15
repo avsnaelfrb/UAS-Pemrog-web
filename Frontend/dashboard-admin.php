@@ -12,9 +12,26 @@ $error_msg = '';
 $active_page = isset($_GET['page']) ? $_GET['page'] : 'books';
 
 // --- LOGIKA MODERASI BUKU (Hapus Konten Tidak Pantas) ---
+// UPDATED: Menghapus file fisik juga agar storage tidak penuh
 if (isset($_GET['delete_book'])) {
     $id = (int)$_GET['delete_book'];
-    // Admin berhak menghapus buku apapun demi keamanan konten
+
+    // 1. Ambil nama file sebelum dihapus datanya
+    $q_file = mysqli_query($conn, "SELECT cover, file_path FROM books WHERE id=$id");
+    if ($row_file = mysqli_fetch_assoc($q_file)) {
+        // 2. Hapus File Fisik
+        $dirBooks = "../uploads/books/";
+        $dirCovers = "../uploads/covers/";
+
+        if (!empty($row_file['file_path'])) {
+            deleteFile($dirBooks . $row_file['file_path']);
+        }
+        if (!empty($row_file['cover'])) {
+            deleteFile($dirCovers . $row_file['cover']);
+        }
+    }
+
+    // 3. Hapus Data dari Database
     if (mysqli_query($conn, "DELETE FROM books WHERE id=$id")) {
         header("Location: dashboard-admin.php?page=books&msg=deleted");
         exit;
@@ -166,7 +183,12 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                                     <tr class="hover:bg-gray-50">
                                         <td class="p-4 align-top">
                                             <div class="w-12 h-16 bg-gray-200 rounded overflow-hidden shadow-sm">
-                                                <?php if ($b['cover']) echo '<img src="data:image/jpeg;base64,' . base64_encode($b['cover']) . '" class="w-full h-full object-cover">'; ?>
+                                                <?php
+                                                $coverPath = '../uploads/covers/' . $b['cover'];
+                                                if (!empty($b['cover']) && file_exists($coverPath)):
+                                                ?>
+                                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover">
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                         <td class="p-4 align-top">
@@ -238,7 +260,13 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                         <div class="grid gap-4">
                             <?php while ($b = mysqli_fetch_assoc($req_books)): ?>
                                 <div class="bg-white p-4 rounded-xl shadow border flex gap-4 items-start">
-                                    <?php if ($b['cover']): ?><img src="data:image/jpeg;base64,<?= base64_encode($b['cover']) ?>" class="w-20 h-28 object-cover rounded"><?php endif; ?>
+                                    <?php
+                                                                                                                                    $coverPath = '../uploads/covers/' . $b['cover'];
+                                                                                                                                    if (!empty($b['cover']) && file_exists($coverPath)):
+                                    ?>
+                                        <img src="<?= $coverPath ?>" class="w-20 h-28 object-cover rounded">
+                                    <?php endif; ?>
+
                                     <div class="flex-1">
                                         <h3 class="font-bold text-lg"><?= htmlspecialchars($b['title']) ?></h3>
                                         <p class="text-sm text-gray-600">Oleh Penerbit: <b><?= htmlspecialchars($b['publisher_name']) ?></b></p>
@@ -291,8 +319,45 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
 
                 <?php
                 case 'users':
-                    include 'users_list_snippet.php'; /* (Bisa di-inline jika mau) */
-                    break; ?>
+                    // --- HALAMAN USER LIST (Ditambahkan manual karena snippet tidak ada) ---
+                    $all_users = mysqli_query($conn, "SELECT * FROM users ORDER BY created_at DESC");
+                ?>
+                    <h2 class="text-2xl font-bold mb-4">👥 Daftar Semua User</h2>
+                    <div class="bg-white rounded-xl shadow overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-4">Nama</th>
+                                    <th class="p-4">Email</th>
+                                    <th class="p-4">Role</th>
+                                    <th class="p-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while ($u = mysqli_fetch_assoc($all_users)): ?>
+                                    <tr class="border-b">
+                                        <td class="p-4"><?= htmlspecialchars($u['name']) ?></td>
+                                        <td class="p-4"><?= htmlspecialchars($u['email']) ?></td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-1 rounded text-xs font-bold 
+                                                <?= $u['role'] == 'ADMIN' ? 'bg-red-100 text-red-800' : ($u['role'] == 'PENERBIT' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') ?>">
+                                                <?= $u['role'] ?>
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-right">
+                                            <?php if ($u['id'] != $_SESSION['user_id']): ?>
+                                                <a href="?delete_user=<?= $u['id'] ?>" onclick="return confirm('Yakin hapus user ini?')" class="text-red-600 font-bold hover:underline">Hapus</a>
+                                            <?php else: ?>
+                                                <span class="text-gray-400 italic">Akun Sendiri</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php break; ?>
+
                 <?php
                 case 'history':
                     $histories = mysqli_query($conn, "SELECT h.*, u.name, b.title FROM history h JOIN users u ON h.user_id=u.id JOIN books b ON h.book_id=b.id ORDER BY h.read_at DESC");

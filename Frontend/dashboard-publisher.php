@@ -151,8 +151,13 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
                     <?php while ($mb = mysqli_fetch_assoc($my_books)): ?>
                         <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-3 items-center hover:shadow-md hover:border-purple-200 transition duration-300 group">
-                            <?php if ($mb['cover']): ?>
-                                <img src="data:image/jpeg;base64,<?= base64_encode($mb['cover']) ?>" class="w-14 h-20 object-cover rounded shadow-sm group-hover:scale-105 transition duration-300">
+                            <?php
+                            $coverPathMb = '../uploads/covers/' . $mb['cover'];
+                            if (!empty($mb['cover']) && file_exists($coverPathMb)):
+                            ?>
+                                <img src="<?= $coverPathMb ?>" class="w-14 h-20 object-cover rounded shadow-sm group-hover:scale-105 transition duration-300">
+                            <?php else: ?>
+                                <div class="w-14 h-20 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
                             <?php endif; ?>
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-purple-700 transition"><?= htmlspecialchars($mb['title']) ?></h4>
@@ -273,8 +278,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-purple-100 hover:border-purple-200 transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
 
                         <div class="h-48 bg-gray-200 overflow-hidden rounded-t-xl relative">
-                            <?php if ($book['cover']): ?>
-                                <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                            <?php
+                            $coverPath = '../uploads/covers/' . $book['cover'];
+                            if (!empty($book['cover']) && file_exists($coverPath)):
+                            ?>
+                                <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                             <?php else: ?>
                                 <div class="flex items-center justify-center h-full text-gray-400">No Cover</div>
                             <?php endif; ?>

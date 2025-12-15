@@ -13,7 +13,9 @@ if (!$conn) {
 session_start();
 
 mysqli_query($conn, "SET SESSION sql_mode = ''");
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '512M'); // Memory limit tetap dijaga
+
+// Base URL Aplikasi (Sesuaikan jika folder project berubah)
 $base_url = "http://localhost/web-perpus-UAS";
 
 function redirect($url)
@@ -22,36 +24,64 @@ function redirect($url)
     exit;
 }
 
+/**
+ * Fungsi untuk mengupload file ke folder fisik
+ * @param array $file - Array dari $_FILES['input_name']
+ * @param string $destination - Path folder tujuan (misal: '../assets/books/')
+ * @return string|false - Mengembalikan nama file baru jika sukses, false jika gagal
+ */
 function uploadFile($file, $destination)
 {
+    // Cek error upload dasar
     if ($file['error'] !== UPLOAD_ERR_OK) {
         if ($file['error'] === UPLOAD_ERR_NO_FILE) return false;
 
+        // Kode error upload PHP untuk debugging
         echo "<script>alert('Upload Gagal! Kode Error PHP: " . $file['error'] . "');</script>";
         return false;
     }
 
+    // Buat folder jika belum ada
     if (!file_exists($destination)) {
         if (!mkdir($destination, 0777, true)) {
-            echo "<script>alert('Gagal membuat folder: $destination. Cek permission Linux!');</script>";
+            echo "<script>alert('Gagal membuat folder: $destination. Cek permission!');</script>";
             return false;
         }
     }
 
+    // Validasi apakah folder bisa ditulis
     if (!is_writable($destination)) {
         echo "<script>alert('Folder tujuan tidak bisa ditulis: $destination. Jalankan chmod 777!');</script>";
         return false;
     }
 
-    $fileName = time() . '_' . preg_replace("/[^a-zA-Z0-9.]/", "", basename($file['name'])); // Sanitasi nama file
+    // Generate nama file unik: timestamp_random.ext
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $fileName = time() . '_' . rand(100, 999) . '.' . $ext;
+
+    // Sanitasi nama file agar aman dari karakter aneh
+    $fileName = preg_replace("/[^a-zA-Z0-9._-]/", "", $fileName);
+
     $target = $destination . '/' . $fileName;
 
     if (move_uploaded_file($file['tmp_name'], $target)) {
         return $fileName;
     } else {
-        echo "<script>alert('Gagal memindahkan file ke: $target. Cek permission!');</script>";
+        echo "<script>alert('Gagal memindahkan file ke: $target. Cek permission folder!');</script>";
         return false;
     }
+}
+
+/**
+ * Fungsi baru untuk menghapus file fisik
+ * Penting agar server tidak penuh sampah saat buku dihapus dari DB
+ */
+function deleteFile($filePath)
+{
+    if (file_exists($filePath)) {
+        return unlink($filePath);
+    }
+    return false;
 }
 
 // Fungsi Helper untuk Badge Status

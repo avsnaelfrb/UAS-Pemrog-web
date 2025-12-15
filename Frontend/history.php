@@ -193,10 +193,13 @@ $books = mysqli_query($conn, $sql);
                                     </span>
                                 </div>
 
-                                <!-- Cover -->
+                                <!-- Cover (UPDATED LOGIC) -->
                                 <div class="h-64 bg-gray-100 relative overflow-hidden rounded-t-xl">
-                                    <?php if ($book['cover']): ?>
-                                        <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <?php
+                                    $coverPath = '../uploads/covers/' . $book['cover'];
+                                    if (!empty($book['cover']) && file_exists($coverPath)):
+                                    ?>
+                                        <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                                     <?php else: ?>
                                         <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                                             <span class="text-4xl mb-2">📚</span>

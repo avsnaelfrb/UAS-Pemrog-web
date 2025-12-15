@@ -18,20 +18,20 @@ if (!isset($_GET['id'])) {
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// --- CONFIG TEMA DINAMIS (Purple untuk Penerbit, Blue untuk User) ---
+// --- CONFIG TEMA DINAMIS ---
 $theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
 
-// Variabel Kelas CSS Tailwind
-$bg_soft = "bg-$theme-50";          // Background lembut
-$bg_main = "bg-$theme-600";         // Background tombol utama
-$bg_hover = "hover:bg-$theme-700";  // Hover tombol utama
-$text_main = "text-$theme-700";     // Teks utama
-$text_dark = "text-$theme-900";     // Teks gelap (judul)
-$border_main = "border-$theme-100"; // Border halus
-$hover_soft = "hover:bg-$theme-50"; // Hover pada menu sidebar
-$hover_text = "hover:text-$theme-700"; // Hover teks menu
+// Variabel Kelas CSS Tailwind (TIDAK DIUBAH)
+$bg_soft = "bg-$theme-50";
+$bg_main = "bg-$theme-600";
+$bg_hover = "hover:bg-$theme-700";
+$text_main = "text-$theme-700";
+$text_dark = "text-$theme-900";
+$border_main = "border-$theme-100";
+$hover_soft = "hover:bg-$theme-50";
+$hover_text = "hover:text-$theme-700";
 
-// --- LOGIKA REQUEST PENERBIT (Hanya untuk User) ---
+// --- LOGIKA REQUEST PENERBIT ---
 if (isset($_POST['request_publisher']) && $role == 'USER') {
     mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
     echo "<script>alert('Permintaan dikirim! Tunggu konfirmasi Admin.');</script>";
@@ -42,6 +42,7 @@ $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 
 // Ambil Detail Buku
+// Query dimodifikasi sedikit agar file_exists tetap jalan dengan logic string
 $query = "
     SELECT b.*, 
     GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names,
@@ -59,6 +60,10 @@ if (!$book) {
     echo "<script>alert('Buku tidak ditemukan!'); window.history.back();</script>";
     exit;
 }
+
+// Logic Cek File Fisik Cover (Tambahan)
+$coverPath = '../uploads/covers/' . $book['cover'];
+$hasCover = (!empty($book['cover']) && file_exists($coverPath));
 
 // Link Kembali Dinamis
 $back_link = 'dashboard-user.php';
@@ -190,8 +195,9 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                         <!-- Kolom Kiri: Cover & Tombol Desktop -->
                         <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-6 md:p-8 border-r border-gray-100 flex flex-col items-center">
                             <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6">
-                                <?php if ($book['cover']): ?>
-                                    <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover">
+                                <?php if ($hasCover): ?>
+                                    <!-- LOGIKA BARU: Tampilkan Cover dari Folder -->
+                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                                         <span class="text-5xl mb-2">📚</span>

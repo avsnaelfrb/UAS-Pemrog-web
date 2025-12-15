@@ -25,7 +25,7 @@ if (isset($_POST['request_publisher'])) {
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 
-// --- LOGIKA FILTER & PENCARIAN (DIKEMBALIKAN) ---
+// --- LOGIKA FILTER & PENCARIAN ---
 // 1. Ambil Data Genre untuk Dropdown
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
@@ -262,14 +262,17 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <?php endif; ?>
             </div>
 
-            <!-- GRID BUKU (DENGAN TAMPILAN BADGE & CARD YANG BAGUS) -->
+            <!-- GRID BUKU (DENGAN LOGIKA STORAGE BARU) -->
             <?php if (mysqli_num_rows($books) > 0): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     <?php while ($book = mysqli_fetch_assoc($books)) { ?>
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-x1 hover:shadow-lg hover:shadow-blue-100  transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
                             <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
-                                <?php if ($book['cover']): ?>
-                                    <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                                <?php
+                                $coverPath = '../uploads/covers/' . $book['cover'];
+                                if (!empty($book['cover']) && file_exists($coverPath)):
+                                ?>
+                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                                         <span class="text-4xl mb-2">📚</span><span class="text-xs">No Cover</span>

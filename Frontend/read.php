@@ -12,7 +12,7 @@ if (!isset($_GET['id'])) {
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// 1. Ambil Judul Buku
+// 1. Ambil Judul Buku (Logic DB masih sama karena table books masih punya kolom title)
 $query = "SELECT title FROM books WHERE id = $id";
 $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
@@ -21,7 +21,7 @@ if (!$book) {
     die("Buku tidak ditemukan.");
 }
 
-// 2. [BARU] Simpan ke History
+// 2. Simpan ke History
 // Menggunakan ON DUPLICATE KEY UPDATE agar jika sudah pernah baca, update waktunya saja
 $insert_history = "INSERT INTO history (user_id, book_id, read_at) 
                    VALUES ($user_id, $id, NOW()) 
@@ -64,7 +64,8 @@ mysqli_query($conn, $insert_history);
             </a>
             <h1 class="font-semibold text-sm md:text-base truncate max-w-md"><?= htmlspecialchars($book['title']) ?></h1>
         </div>
-        <div class="text-xs text-gray-400 hidden sm:block">Mode Database Storage</div>
+        <!-- Update Label info system -->
+        <div class="text-xs text-gray-400 hidden sm:block">Mode File System Storage</div>
     </div>
 
     <div class="flex-1 bg-gray-100 relative">
