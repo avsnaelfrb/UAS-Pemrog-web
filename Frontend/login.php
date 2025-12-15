@@ -3,6 +3,7 @@ require '../Backend/config.php';
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
+    else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php'); // Redirect baru
     else redirect('dashboard-user.php');
 }
 
@@ -22,7 +23,9 @@ if (isset($_POST['login'])) {
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
 
+            // Redirect Berdasarkan Role
             if ($user['role'] == 'ADMIN') redirect('dashboard-admin.php');
+            else if ($user['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
             else redirect('dashboard-user.php');
         } else {
             $error = "Password salah!";
