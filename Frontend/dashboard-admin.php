@@ -11,8 +11,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
 $message = '';
 $error_msg = '';
 
+// --- LOGIKA HAPUS USER (BARU) ---
+if (isset($_GET['delete_user'])) {
+    $user_id_to_delete = (int)$_GET['delete_user'];
 
-// --- GANTI TOTAL BLOK LOGIKA SIMPAN BUKU DENGAN INI ---
+    // Cegah admin menghapus dirinya sendiri
+    if ($user_id_to_delete == $_SESSION['user_id']) {
+        echo "<script>alert('Anda tidak dapat menghapus akun sendiri!'); window.location='dashboard-admin.php';</script>";
+        exit;
+    }
+
+    // Proses hapus
+    $q_del_user = mysqli_query($conn, "DELETE FROM users WHERE id = $user_id_to_delete");
+    if ($q_del_user) {
+        echo "<script>alert('User berhasil dihapus!'); window.location='dashboard-admin.php';</script>";
+        exit;
+    } else {
+        $error_msg = "Gagal menghapus user: " . mysqli_error($conn);
+    }
+}
+
+// --- LOGIKA SIMPAN BUKU ---
 if (isset($_POST['save_book'])) {
     $mode = $_POST['mode'];
     $book_id = isset($_POST['book_id']) ? (int)$_POST['book_id'] : 0;
@@ -146,6 +165,7 @@ if (isset($_GET['edit'])) {
     }
 }
 
+// Fetch Books
 $books_query = "
     SELECT b.id, b.title, b.author, b.year, b.type, b.cover, 
     CASE WHEN file_path IS NOT NULL AND LENGTH(file_path) > 0 THEN 1 ELSE 0 END as file_exists,
@@ -158,6 +178,10 @@ $books_query = "
 ";
 $books = mysqli_query($conn, $books_query);
 $genres = mysqli_query($conn, "SELECT * FROM genres");
+
+// --- Fetch Users (BARU) ---
+$users_query = "SELECT * FROM users ORDER BY role ASC, created_at DESC";
+$users_list = mysqli_query($conn, $users_query);
 ?>
 
 <!DOCTYPE html>
@@ -178,6 +202,10 @@ $genres = mysqli_query($conn, "SELECT * FROM genres");
                 <span>📚</span> Dashboard Admin (Database Mode)
             </h1>
             <div class="flex gap-2">
+                <!-- Tombol Profil Admin -->
+                <a href="profile.php" class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded hover:bg-indigo-100 text-sm font-medium flex items-center gap-1">
+                    <span>👤</span> Profil Saya
+                </a>
                 <a href="dashboard-user.php" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm font-medium">Lihat Web User</a>
                 <a href="logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm font-medium">Logout</a>
             </div>
@@ -285,78 +313,131 @@ $genres = mysqli_query($conn, "SELECT * FROM genres");
         </div>
 
         <!-- Tabel Daftar Buku -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-8">
             <div class="p-4 bg-gray-50 border-b">
-                <h3 class="font-bold text-gray-700">Daftar Koleksi Digital (Database Storage)</h3>
+                <h3 class="font-bold text-gray-700">Daftar Koleksi Digital</h3>
             </div>
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-gray-100 border-b text-gray-600 text-sm uppercase tracking-wider">
-                    <tr>
-                        <th class="p-4 w-24">Cover</th>
-                        <th class="p-4">Detail Buku</th>
-                        <th class="p-4 w-64">Genre</th>
-                        <th class="p-4 w-32">Status File</th>
-                        <th class="p-4 text-right w-40">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <?php while ($row = mysqli_fetch_assoc($books)): ?>
-                        <tr class="hover:bg-blue-50 transition duration-150">
-                            <td class="p-4 align-top">
-                                <?php if ($row['cover']): ?>
-                                    <!-- DISPLAY IMAGE DARI BLOB MENGGUNAKAN BASE64 -->
-                                    <img src="data:image/jpeg;base64,<?= base64_encode($row['cover']) ?>" class="h-20 w-14 object-cover rounded shadow border bg-white">
-                                <?php else: ?>
-                                    <div class="h-20 w-14 bg-gray-200 flex items-center justify-center text-xs text-gray-500 rounded border">No img</div>
-                                <?php endif; ?>
-                            </td>
-                            <td class="p-4 align-top">
-                                <div class="font-bold text-gray-900 text-lg"><?= htmlspecialchars($row['title']) ?></div>
-                                <div class="text-sm text-gray-600 font-medium"><?= htmlspecialchars($row['author']) ?></div>
-                                <div class="text-xs text-gray-400 mt-1 bg-gray-100 inline-block px-2 py-1 rounded">
-                                    <?= $row['year'] ?> • <?= $row['type'] ?>
-                                </div>
-                            </td>
-                            <td class="p-4 align-top">
-                                <div class="flex flex-wrap gap-1">
-                                    <?php
-                                    $bg_genres = explode(',', $row['genre_names']);
-                                    foreach ($bg_genres as $g_name):
-                                        if (trim($g_name) == '') continue;
-                                    ?>
-                                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md border border-blue-200">
-                                            <?= trim($g_name) ?>
-                                        </span>
-                                    <?php endforeach; ?>
-                                </div>
-                            </td>
-                            <td class="p-4 align-top text-sm">
-                                <?php if ($row['file_exists']): ?>
-                                    <span class="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded w-max">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Stored in DB
-                                    </span>
-                                <?php else: ?>
-                                    <span class="text-red-500 font-bold bg-red-50 px-2 py-1 rounded">Empty</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="p-4 align-top text-right">
-                                <div class="flex flex-col gap-2">
-                                    <a href="?edit=<?= $row['id'] ?>" class="text-center bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded hover:bg-yellow-500 font-medium text-sm transition shadow-sm">
-                                        ✏️ Edit
-                                    </a>
-                                    <a href="?delete=<?= $row['id'] ?>" onclick="return confirm('Hapus permanen?')" class="text-center bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 font-medium text-sm transition">
-                                        🗑️ Hapus
-                                    </a>
-                                </div>
-                            </td>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100 border-b text-gray-600 text-sm uppercase tracking-wider">
+                        <tr>
+                            <th class="p-4 w-24">Cover</th>
+                            <th class="p-4">Detail Buku</th>
+                            <th class="p-4 w-64">Genre</th>
+                            <th class="p-4 w-32">Status File</th>
+                            <th class="p-4 text-right w-40">Aksi</th>
                         </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <?php while ($row = mysqli_fetch_assoc($books)): ?>
+                            <tr class="hover:bg-blue-50 transition duration-150">
+                                <td class="p-4 align-top">
+                                    <?php if ($row['cover']): ?>
+                                        <img src="data:image/jpeg;base64,<?= base64_encode($row['cover']) ?>" class="h-20 w-14 object-cover rounded shadow border bg-white">
+                                    <?php else: ?>
+                                        <div class="h-20 w-14 bg-gray-200 flex items-center justify-center text-xs text-gray-500 rounded border">No img</div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="p-4 align-top">
+                                    <div class="font-bold text-gray-900 text-lg"><?= htmlspecialchars($row['title']) ?></div>
+                                    <div class="text-sm text-gray-600 font-medium"><?= htmlspecialchars($row['author']) ?></div>
+                                    <div class="text-xs text-gray-400 mt-1 bg-gray-100 inline-block px-2 py-1 rounded">
+                                        <?= $row['year'] ?> • <?= $row['type'] ?>
+                                    </div>
+                                </td>
+                                <td class="p-4 align-top">
+                                    <div class="flex flex-wrap gap-1">
+                                        <?php
+                                        $bg_genres = explode(',', $row['genre_names']);
+                                        foreach ($bg_genres as $g_name):
+                                            if (trim($g_name) == '') continue;
+                                        ?>
+                                            <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md border border-blue-200">
+                                                <?= trim($g_name) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
+                                <td class="p-4 align-top text-sm">
+                                    <?php if ($row['file_exists']): ?>
+                                        <span class="text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-1 rounded w-max">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Stored
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-red-500 font-bold bg-red-50 px-2 py-1 rounded">Empty</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="p-4 align-top text-right">
+                                    <div class="flex flex-col gap-2">
+                                        <a href="?edit=<?= $row['id'] ?>" class="text-center bg-yellow-400 text-yellow-900 px-3 py-1.5 rounded hover:bg-yellow-500 font-medium text-sm transition shadow-sm">
+                                            ✏️ Edit
+                                        </a>
+                                        <a href="?delete=<?= $row['id'] ?>" onclick="return confirm('Hapus permanen?')" class="text-center bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 font-medium text-sm transition">
+                                            🗑️ Hapus
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <!-- Tabel User Management (BARU) -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                <h3 class="font-bold text-gray-700">👤 Manajemen User (Lihat & Hapus)</h3>
+                <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded border">Admin tidak dapat mengedit data user</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-100 border-b text-gray-600 text-sm uppercase tracking-wider">
+                        <tr>
+                            <th class="p-4">Nama Lengkap</th>
+                            <th class="p-4">Email</th>
+                            <th class="p-4">NIM</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <?php while ($user = mysqli_fetch_assoc($users_list)): ?>
+                            <tr class="hover:bg-blue-50 transition duration-150">
+                                <td class="p-4 font-medium text-gray-900">
+                                    <?= htmlspecialchars($user['name']) ?>
+                                    <?php if ($user['id'] == $_SESSION['user_id']) echo "<span class='text-xs text-blue-600 ml-1'>(Anda)</span>"; ?>
+                                </td>
+                                <td class="p-4 text-gray-600"><?= htmlspecialchars($user['email']) ?></td>
+                                <td class="p-4 text-gray-600"><?= htmlspecialchars($user['nim']) ?></td>
+                                <td class="p-4">
+                                    <?php if ($user['role'] == 'ADMIN'): ?>
+                                        <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold border border-purple-200">ADMIN</span>
+                                    <?php else: ?>
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-bold border border-gray-200">USER</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
+                                        <a href="?delete_user=<?= $user['id'] ?>"
+                                            onclick="return confirm('Yakin ingin menghapus user <?= htmlspecialchars($user['name']) ?>? Data tidak bisa dikembalikan.')"
+                                            class="inline-block bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 font-medium text-sm transition">
+                                            🗑️ Hapus
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="text-gray-400 text-sm cursor-not-allowed">Locked</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </body>
 
