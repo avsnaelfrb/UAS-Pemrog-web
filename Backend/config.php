@@ -4,6 +4,11 @@ $user = "root";
 $pass = "";
 $db   = "elibrary_db";
 
+// Aktifkan Error Reporting untuk Debugging (PENTING SAAT ERROR 500)
+mysqli_report(MYSQLI_REPORT_OFF); // Matikan auto-throw exception agar bisa kita tangkap manual
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 $conn = mysqli_connect($host, $user, $pass, $db);
 
 if (!$conn) {
@@ -12,9 +17,7 @@ if (!$conn) {
 
 session_start();
 
-mysqli_query($conn, "SET SESSION sql_mode = ''");
-ini_set('memory_limit', '512M'); 
-
+// Base URL (Sesuaikan dengan folder projectmu)
 $base_url = "http://localhost/web-perpus-UAS";
 
 function redirect($url)
@@ -23,41 +26,25 @@ function redirect($url)
     exit;
 }
 
-
+// FUNGSI UPLOAD FILE (Wajib ada agar tidak Error 500)
 function uploadFile($file, $destination)
 {
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        if ($file['error'] === UPLOAD_ERR_NO_FILE) return false;
-
-        echo "<script>alert('Upload Gagal! Kode Error PHP: " . $file['error'] . "');</script>";
         return false;
     }
 
     if (!file_exists($destination)) {
-        if (!mkdir($destination, 0777, true)) {
-            echo "<script>alert('Gagal membuat folder: $destination. Cek permission!');</script>";
-            return false;
-        }
-    }
-
-    if (!is_writable($destination)) {
-        echo "<script>alert('Folder tujuan tidak bisa ditulis: $destination. Jalankan chmod 777!');</script>";
-        return false;
+        mkdir($destination, 0777, true);
     }
 
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $fileName = time() . '_' . rand(100, 999) . '.' . $ext;
-
-    $fileName = preg_replace("/[^a-zA-Z0-9._-]/", "", $fileName);
-
     $target = $destination . '/' . $fileName;
 
     if (move_uploaded_file($file['tmp_name'], $target)) {
         return $fileName;
-    } else {
-        echo "<script>alert('Gagal memindahkan file ke: $target. Cek permission folder!');</script>";
-        return false;
     }
+    return false;
 }
 
 function deleteFile($filePath)
