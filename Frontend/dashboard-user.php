@@ -6,13 +6,33 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// 1. Ambil Data Genre
+// Redirect jika login sebagai PENERBIT tapi masuk ke halaman USER
+if ($_SESSION['role'] == 'PENERBIT') {
+    header("Location: dashboard-publisher.php");
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+$message = '';
+
+// --- LOGIKA REQUEST PENERBIT ---
+if (isset($_POST['request_publisher'])) {
+    mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
+    $message = "Permintaan dikirim! Tunggu konfirmasi Admin.";
+}
+
+// Refresh User Data
+$u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
+$current_user = mysqli_fetch_assoc($u_res);
+
+// --- LOGIKA FILTER & PENCARIAN (DIKEMBALIKAN) ---
+// 1. Ambil Data Genre untuk Dropdown
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
 // 2. Tangkap Input Filter
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
 $filter_type = isset($_GET['type']) ? $_GET['type'] : '';
-$filter_genres = isset($_GET['genres']) ? $_GET['genres'] : [];
+$filter_genres = isset($_GET['genres']) ? $_GET['genres'] : []; // Array genres
 
 // 3. Susun Query Utama
 $sql = "
@@ -21,7 +41,7 @@ $sql = "
     FROM books b 
     LEFT JOIN book_genres bg ON b.id = bg.book_id 
     LEFT JOIN genres g ON bg.genre_id = g.id 
-    WHERE 1=1 
+    WHERE b.status = 'APPROVED' 
 ";
 
 if ($search) {
@@ -31,6 +51,7 @@ if ($filter_type) {
     $sql .= " AND type = '$filter_type'";
 }
 
+// Filter Genre (Multi-select)
 if (!empty($filter_genres)) {
     $genre_ids = array_map('intval', $filter_genres);
     $ids_string = implode(',', $genre_ids);
@@ -40,7 +61,7 @@ if (!empty($filter_genres)) {
 $sql .= " GROUP BY b.id ORDER BY b.created_at DESC";
 $books = mysqli_query($conn, $sql);
 
-// Helper Label
+// Helper Label Tipe
 $type_map = [
     '' => '📄 Semua Tipe',
     'BOOK' => '📘 Buku',
@@ -84,12 +105,19 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
 <body class="bg-gray-50 font-sans">
 
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden glass-effect"></div>
+    <!-- OVERLAY MOBILE -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
+
+    <?php if ($message): ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-yellow-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
+            🌟 <?= $message ?>
+        </div>
+    <?php endif; ?>
 
     <div class="flex min-h-screen">
 
         <!-- SIDEBAR -->
-        <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition">
+        <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition h-full overflow-y-auto">
             <div class="p-6 border-b flex flex-col items-center relative">
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,10 +127,10 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
                 <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl mb-3">👤</div>
                 <h1 class="text-xl font-bold text-blue-900">E-Library</h1>
-                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($_SESSION['name']) ?></p>
+                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($current_user['name']) ?></p>
             </div>
 
-            <nav class="p-4 space-y-2 h-[calc(100vh-200px)] overflow-y-auto">
+            <nav class="p-4 space-y-2">
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'ADMIN'): ?>
                     <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
                         <span>⚡</span> Admin Panel
@@ -112,14 +140,28 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
                     <span>📚</span> Katalog Buku
                 </a>
-                <!-- MENU HISTORY BARU -->
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
                     <span>🕒</span> Riwayat Baca
                 </a>
-
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
                     <span>⚙️</span> Profil Saya
                 </a>
+
+                <!-- TOMBOL REQUEST PENERBIT -->
+                <div class="pt-4 mt-4 border-t border-gray-200">
+                    <?php if ($current_user['request_penerbit'] == '0'): ?>
+                        <form method="POST">
+                            <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-lg font-medium transition">
+                                <span>🌟</span> Jadi Penerbit
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">
+                            ⏳ Menunggu Konfirmasi Penerbit
+                        </div>
+                    <?php endif; ?>
+                </div>
+
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
                 </a>
@@ -144,7 +186,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 </a>
             </div>
 
-            <!-- SEARCH & FILTER SECTION -->
+            <!-- SEARCH & FILTER SECTION (DIKEMBALIKAN) -->
             <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 flex flex-col gap-4 relative z-10">
                 <form method="GET" class="flex flex-col md:flex-row gap-4 w-full items-stretch">
                     <!-- Search Bar -->
@@ -153,7 +195,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                         <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
                     </div>
 
-                    <!-- DROPDOWN GENRE -->
+                    <!-- DROPDOWN GENRE (Multi-Select) -->
                     <div class="relative min-w-[220px]" id="genreDropdownContainer">
                         <button type="button" onclick="toggleGenreDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500 text-left flex justify-between items-center text-gray-700 transition hover:bg-gray-50">
                             <span id="genreLabel" class="truncate mr-2">
@@ -177,7 +219,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                         </div>
                     </div>
 
-                    <!-- DROPDOWN TIPE -->
+                    <!-- DROPDOWN TIPE (Modern Style) -->
                     <div class="relative min-w-[180px]" id="typeDropdownContainer">
                         <input type="hidden" name="type" id="typeInput" value="<?= htmlspecialchars($filter_type) ?>">
                         <button type="button" onclick="toggleTypeDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500 text-left flex justify-between items-center text-gray-700 transition hover:bg-gray-50">
@@ -220,7 +262,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <?php endif; ?>
             </div>
 
-            <!-- GRID BUKU -->
+            <!-- GRID BUKU (DENGAN TAMPILAN BADGE & CARD YANG BAGUS) -->
             <?php if (mysqli_num_rows($books) > 0): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     <?php while ($book = mysqli_fetch_assoc($books)) { ?>
@@ -236,17 +278,20 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                             </div>
                             <div class="p-5 flex-1 flex flex-col">
                                 <div class="flex justify-between items-start mb-2">
-                                    <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 rounded"><?= $book['type'] ?></div>
+                                    <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                        <?= $book['type'] ?>
+                                    </div>
                                 </div>
                                 <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2" title="<?= htmlspecialchars($book['title']) ?>"><?= htmlspecialchars($book['title']) ?></h3>
                                 <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
+
                                 <div class="flex flex-wrap gap-1 mb-4">
                                     <?php foreach (explode(',', $book['genre_names']) as $gn): if (trim($gn) == '') continue; ?>
                                         <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200"><?= trim($gn) ?></span>
                                     <?php endforeach; ?>
                                 </div>
+
                                 <div class="mt-auto pt-4 border-t border-gray-100">
-                                    <!-- PERUBAHAN DISINI: Tombol mengarah ke detail.php -->
                                     <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm hover:shadow-md">
                                         Lihat Detail
                                     </a>
@@ -265,6 +310,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
         </main>
     </div>
 
+    <!-- Script JavaScript untuk Toggle & Dropdown -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
