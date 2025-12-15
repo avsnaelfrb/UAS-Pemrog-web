@@ -50,3 +50,16 @@ INSERT IGNORE INTO genres (name) VALUES
 
 ALTER TABLE books MODIFY file_path LONGBLOB;
 ALTER TABLE books MODIFY cover LONGBLOB;
+
+-- ... (Existing code) ...
+
+-- Tabel History Baca (BARU)
+CREATE TABLE IF NOT EXISTS history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    book_id INT NOT NULL,
+    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_history (user_id, book_id) -- Mencegah duplikasi, cukup update timestamp
+);
