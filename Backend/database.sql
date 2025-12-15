@@ -21,15 +21,14 @@ CREATE TABLE IF NOT EXISTS genres (
 );
 
 -- Tabel Books (DIMODIFIKASI UNTUK STORAGE SYSTEM)
--- Kolom 'cover' dan 'file_path' diubah menjadi VARCHAR untuk menyimpan nama file/path
 CREATE TABLE IF NOT EXISTS books (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     description TEXT,
     
-    cover VARCHAR(255) DEFAULT NULL,      -- Menyimpan nama file gambar (misal: 17001.jpg)
-    file_path VARCHAR(255) NOT NULL,      -- Menyimpan nama file PDF (misal: 17001.pdf)
+    cover VARCHAR(255) DEFAULT NULL,      -- Menyimpan nama file gambar
+    file_path VARCHAR(255) NOT NULL,      -- Menyimpan nama file PDF
     
     year INT,
     type ENUM('BOOK', 'JOURNAL', 'ARTICLE') DEFAULT 'BOOK',
@@ -56,6 +55,17 @@ CREATE TABLE IF NOT EXISTS history (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
     UNIQUE KEY unique_history (user_id, book_id)
+);
+
+-- Tabel Saved Books (Fitur Baru: Koleksi/Bookmark)
+CREATE TABLE IF NOT EXISTS saved_books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    book_id INT NOT NULL,
+    saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_saved (user_id, book_id)
 );
 
 -- Seed Data Genre (Jika belum ada)
