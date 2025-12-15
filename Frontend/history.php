@@ -122,8 +122,12 @@ $books = mysqli_query($conn, $sql);
                     <span>📚</span> Katalog
                 </a>
 
-                <!-- Tombol Upload Karya (Hanya Penerbit) -->
+                <!-- MENU KHUSUS PENERBIT (Updated) -->
                 <?php if ($role == 'PENERBIT'): ?>
+                    <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                        <span>📂</span> Terbitan Saya
+                    </a>
+
                     <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
                         <span>📤</span> Upload Karya
                     </a>
@@ -134,11 +138,15 @@ $books = mysqli_query($conn, $sql);
                     <span>🕒</span> Riwayat
                 </a>
 
+                <!-- Menu Koleksi -->
+                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <span>🔖</span> Koleksi
+                </a>
+
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
                     <span>⚙️</span> Profile
                 </a>
 
-                <!-- Tombol Request Penerbit (Hanya User) -->
                 <?php if ($role == 'USER'): ?>
                     <div class="pt-4 mt-4 border-t border-gray-200">
                         <?php if ($current_user['request_penerbit'] == '0'): ?>
