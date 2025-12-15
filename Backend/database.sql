@@ -20,15 +20,17 @@ CREATE TABLE IF NOT EXISTS genres (
     name VARCHAR(100) UNIQUE NOT NULL
 );
 
--- Tabel Books (DIMODIFIKASI UNTUK STORAGE SYSTEM)
+-- Tabel Books (MODIFIKASI UNTUK FITUR ARTIKEL)
+-- Menambahkan kolom 'link' dan mengubah 'file_path' agar boleh NULL
 CREATE TABLE IF NOT EXISTS books (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     description TEXT,
     
-    cover VARCHAR(255) DEFAULT NULL,      -- Menyimpan nama file gambar
-    file_path VARCHAR(255) NOT NULL,      -- Menyimpan nama file PDF
+    cover VARCHAR(255) DEFAULT NULL,
+    file_path VARCHAR(255) DEFAULT NULL,  -- Boleh NULL untuk Artikel
+    link TEXT DEFAULT NULL,               -- Kolom Baru untuk Link Artikel
     
     year INT,
     type ENUM('BOOK', 'JOURNAL', 'ARTICLE') DEFAULT 'BOOK',
@@ -57,7 +59,7 @@ CREATE TABLE IF NOT EXISTS history (
     UNIQUE KEY unique_history (user_id, book_id)
 );
 
--- Tabel Saved Books (Fitur Baru: Koleksi/Bookmark)
+-- Tabel Saved Books
 CREATE TABLE IF NOT EXISTS saved_books (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -68,6 +70,6 @@ CREATE TABLE IF NOT EXISTS saved_books (
     UNIQUE KEY unique_saved (user_id, book_id)
 );
 
--- Seed Data Genre (Jika belum ada)
+-- Seed Data Genre
 INSERT IGNORE INTO genres (name) VALUES 
-('Fiksi'), ('Teknologi'), ('Sains'), ('Sejarah'), ('Bisnis'), ('Desain');
+('Fiksi'), ('Teknologi'), ('Sains'), ('Sejarah'), ('Bisnis'), ('Desain'), ('Biografi'), ('Filosofi'), ('Psikologi');
