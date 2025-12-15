@@ -169,6 +169,11 @@ $role = $user['role'];
                     <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
                         <span>📚</span> Katalog Buku
                     </a>
+                    <!-- MENU HISTORY BARU -->
+                    <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
+                        <span>🕒</span> Riwayat Baca
+                    </a>
+
                     <a href="profile.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
                         <span>⚙️</span> Profil Saya
                     </a>
