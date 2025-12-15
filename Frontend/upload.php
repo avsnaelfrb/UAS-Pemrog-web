@@ -20,11 +20,9 @@ if (isset($_POST['upload_karya'])) {
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $selected_genres = isset($_POST['genres']) ? $_POST['genres'] : [];
 
-    // 1. Tentukan Folder Tujuan (Naik satu level dari Frontend, lalu masuk uploads)
     $dirBooks = "../uploads/books";
     $dirCovers = "../uploads/covers";
 
-    // 2. Proses Upload Cover (Opsional)
     $coverFilename = null;
     if (isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
         $uploadResult = uploadFile($_FILES['cover'], $dirCovers);
@@ -35,7 +33,6 @@ if (isset($_POST['upload_karya'])) {
         }
     }
 
-    // 3. Proses Upload PDF (Wajib)
     $pdfFilename = null;
     if (isset($_FILES['file_book']) && $_FILES['file_book']['error'] === UPLOAD_ERR_OK) {
         $uploadResult = uploadFile($_FILES['file_book'], $dirBooks);
@@ -48,21 +45,17 @@ if (isset($_POST['upload_karya'])) {
         $error_msg = "File PDF wajib dipilih!";
     }
 
-    // 4. Simpan ke Database jika tidak ada error dan PDF berhasil terupload
     if (!$error_msg && $pdfFilename) {
-        // Query Insert: Sekarang kolom cover & file_path menyimpan STRING (nama file), bukan BLOB
         $query = "INSERT INTO books (title, author, description, year, type, cover, file_path, status, uploaded_by) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)";
 
         $stmt = mysqli_prepare($conn, $query);
 
-        // sssisssi -> string, string, string, int, string, string (nama file), string (nama file), int
         mysqli_stmt_bind_param($stmt, "sssisssi", $title, $author, $description, $year, $type, $coverFilename, $pdfFilename, $user_id);
 
         if (mysqli_stmt_execute($stmt)) {
             $new_id = mysqli_insert_id($conn);
 
-            // Simpan Genre
             if (!empty($selected_genres)) {
                 foreach ($selected_genres as $gid) {
                     $gid = (int)$gid;
@@ -73,14 +66,12 @@ if (isset($_POST['upload_karya'])) {
             $message = "Karya berhasil diupload! Silakan tunggu moderasi Admin.";
         } else {
             $error_msg = "Gagal menyimpan data ke database: " . mysqli_error($conn);
-            // Opsional: Hapus file yang sudah terlanjur ke-upload jika DB gagal (Clean up)
             if ($coverFilename) unlink($dirCovers . '/' . $coverFilename);
             if ($pdfFilename) unlink($dirBooks . '/' . $pdfFilename);
         }
     }
 }
 
-// Ambil Data User & Genre (Tidak Berubah)
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
@@ -165,7 +156,7 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
                     <span>🕒</span> Riwayat
                 </a>
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 rounded-lg font-medium transition">
-                    <span>⚙️</span> Profil
+                    <span>⚙️</span> Profile
                 </a>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
