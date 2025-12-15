@@ -178,7 +178,7 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
                 <a href="upload.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm"><span>📤</span> Upload Karya</a>
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition"><span>🕒</span> Riwayat</a>
                 <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>🔖</span> Koleksi</a>
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition"><span>⚙️</span> Profil</a>
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition"><span>⚙️</span> Profile</a>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t"><span>🚪</span> Keluar</a>
             </nav>
         </aside>
