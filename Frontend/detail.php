@@ -159,6 +159,20 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                     <span>⚙️</span> Profile
                 </a>
+                <!-- TOMBOL REQUEST PENERBIT -->
+                <div class="pt-4 mt-4 border-t border-gray-200">
+                    <?php if ($current_user['request_penerbit'] == '0'): ?>
+                        <form method="POST">
+                            <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                                <span>✒️</span> Jadi Penerbit
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">
+                            ⏳ Menunggu Konfirmasi Penerbit
+                        </div>
+                    <?php endif; ?>
+                </div>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
                 </a>
