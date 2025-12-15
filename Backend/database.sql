@@ -63,3 +63,17 @@ CREATE TABLE IF NOT EXISTS history (
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
     UNIQUE KEY unique_history (user_id, book_id) -- Mencegah duplikasi, cukup update timestamp
 );
+
+-- 1. Update kolom Role pada users untuk mendukung PENERBIT
+ALTER TABLE users MODIFY COLUMN role ENUM('ADMIN', 'USER', 'PENERBIT') DEFAULT 'USER';
+
+-- 2. Tambah kolom status request penerbit
+ALTER TABLE users ADD COLUMN request_penerbit ENUM('0', '1') DEFAULT '0'; 
+-- '0' = Tidak request, '1' = Sedang request
+
+-- 3. Update tabel books untuk status publikasi dan pemilik buku
+ALTER TABLE books ADD COLUMN status ENUM('APPROVED', 'PENDING', 'REJECTED') DEFAULT 'APPROVED';
+ALTER TABLE books ADD COLUMN uploaded_by INT DEFAULT NULL;
+
+-- 4. Set data lama (jika ada) agar statusnya APPROVED dan uploaded_by NULL (milik sistem/admin)
+UPDATE books SET status = 'APPROVED' WHERE status IS NULL;
