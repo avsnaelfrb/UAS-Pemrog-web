@@ -100,6 +100,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <span>📚</span> Katalog
                 </a>
 
+                <!-- Menu Terbitan Saya Baru -->
+                <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <span>📂</span> Terbitan Saya
+                </a>
+
                 <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
                     <span>📤</span> Upload Karya
                 </a>
@@ -107,6 +112,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
                     <span>🕒</span> Riwayat
                 </a>
+
+                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <span>🔖</span> Koleksi
+                </a>
+
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
                     <span>⚙️</span> Profile
                 </a>
@@ -139,6 +149,13 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     + Upload Baru
                 </a>
             </div>
+
+            <!-- Section 1 Dihapus karena sudah ada di menu Terbitan Saya -->
+
+            <!-- Section 2: Katalog Umum -->
+            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span>📚</span> Katalog Perpustakaan
+            </h3>
 
             <!-- SEARCH & FILTER BAR (ADAPTASI UNGU) -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col gap-4 relative z-10">
@@ -237,67 +254,37 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <?php endif; ?>
             </div>
 
-            <!-- Section 1: Karya Anda (Status Pending/Approved) -->
-            <?php
-            $my_books = mysqli_query($conn, "SELECT * FROM books WHERE uploaded_by=$user_id ORDER BY created_at DESC");
-            if (mysqli_num_rows($my_books) > 0):
-            ?>
-                <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                    <span>📂</span> Karya Anda
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-                    <?php while ($mb = mysqli_fetch_assoc($my_books)): ?>
-                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex gap-3 items-center hover:shadow-md hover:border-purple-200 transition duration-300 group">
-                            <?php
-                            $coverPathMb = '../uploads/covers/' . $mb['cover'];
-                            if (!empty($mb['cover']) && file_exists($coverPathMb)):
-                            ?>
-                                <img src="<?= $coverPathMb ?>" class="w-14 h-20 object-cover rounded shadow-sm group-hover:scale-105 transition duration-300">
-                            <?php else: ?>
-                                <div class="w-14 h-20 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
-                            <?php endif; ?>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-gray-800 text-sm truncate group-hover:text-purple-700 transition"><?= htmlspecialchars($mb['title']) ?></h4>
-                                <p class="text-xs text-gray-500 mb-2"><?= $mb['created_at'] ?></p>
-                                <?= getStatusBadge($mb['status']) ?>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Section 2: Katalog Umum -->
-            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span>📚</span> Katalog Perpustakaan
-            </h3>
-
-            <!-- GRID BUKU -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- GRID BUKU (UPDATED STYLE: Matches dashboard-user.php) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-20">
                 <?php while ($book = mysqli_fetch_assoc($books)) { ?>
                     <!-- KARTU BUKU DENGAN HOVER UNGU -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-purple-100 hover:border-purple-200 transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
 
-                        <div class="h-48 bg-gray-200 overflow-hidden rounded-t-xl relative">
+                        <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
                             <?php
                             $coverPath = '../uploads/covers/' . $book['cover'];
                             if (!empty($book['cover']) && file_exists($coverPath)):
                             ?>
                                 <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                             <?php else: ?>
-                                <div class="flex items-center justify-center h-full text-gray-400">No Cover</div>
+                                <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                                    <span class="text-4xl mb-2">📚</span><span class="text-xs">No Cover</span>
+                                </div>
                             <?php endif; ?>
 
-                            <!-- Overlay tipis saat hover -->
+                            <!-- Overlay tipis saat hover (Purple Tint) -->
                             <div class="absolute inset-0 bg-purple-900 bg-opacity-0 group-hover:bg-opacity-10 transition duration-300"></div>
                         </div>
 
                         <div class="p-4 flex-1 flex flex-col">
                             <!-- Type Badge -->
-                            <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded w-fit mb-2 border border-purple-100 uppercase tracking-wider">
-                                <?= $book['type'] ?>
-                            </span>
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="text-xs font-semibold text-purple-600 tracking-wide uppercase bg-purple-50 px-2 py-1 w-fit rounded border border-purple-100">
+                                    <?= $book['type'] ?>
+                                </div>
+                            </div>
 
-                            <h3 class="font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-purple-700 transition">
+                            <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2 group-hover:text-purple-700 transition" title="<?= htmlspecialchars($book['title']) ?>">
                                 <?= htmlspecialchars($book['title']) ?>
                             </h3>
                             <p class="text-sm text-gray-500 mb-3 font-medium">
@@ -317,9 +304,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                                 <?php endforeach; ?>
                             </div>
 
-                            <a href="detail.php?id=<?= $book['id'] ?>" class="mt-auto block w-full py-2 bg-purple-50 text-purple-700 text-center rounded-lg font-bold border border-purple-100 hover:bg-purple-600 hover:text-white hover:border-transparent transition duration-300 shadow-sm">
-                                Lihat Detail
-                            </a>
+                            <div class="mt-auto pt-4 border-t border-gray-100">
+                                <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold transition shadow-sm hover:shadow-md">
+                                    Lihat Detail
+                                </a>
+                            </div>
                         </div>
                     </div>
                 <?php } ?>
