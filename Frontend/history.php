@@ -7,8 +7,30 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+$role = $_SESSION['role']; // Ambil Role
+$message = '';
 
-// Query History: Join tabel history dengan books dan genres
+// --- CONFIG TEMA BERDASARKAN ROLE ---
+$theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
+// Variable warna dinamis untuk class Tailwind
+$bg_soft = "bg-$theme-50";
+$text_main = "text-$theme-700";
+$border_main = "border-$theme-100";
+$hover_soft = "hover:bg-$theme-50";
+$btn_main = "bg-$theme-600 hover:bg-$theme-700";
+
+// --- LOGIKA REQUEST PENERBIT (Untuk User Biasa) ---
+if (isset($_POST['request_publisher'])) {
+    mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
+    $message = "Permintaan dikirim! Tunggu konfirmasi Admin.";
+}
+
+// Ambil Data User & Genre
+$u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
+$current_user = mysqli_fetch_assoc($u_res);
+$genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
+
+// Query History
 $sql = "
     SELECT b.id, b.title, b.author, b.cover, b.type, h.read_at,
     GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
@@ -20,7 +42,6 @@ $sql = "
     GROUP BY b.id 
     ORDER BY h.read_at DESC
 ";
-
 $books = mysqli_query($conn, $sql);
 ?>
 
@@ -36,13 +57,37 @@ $books = mysqli_query($conn, $sql);
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .genre-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 font-sans">
 
     <!-- OVERLAY MOBILE -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden glass-effect"></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
+
+    <?php if ($message): ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
+            ✅ <?= $message ?>
+        </div>
+    <?php endif; ?>
 
     <div class="flex min-h-screen">
 
@@ -54,28 +99,60 @@ $books = mysqli_query($conn, $sql);
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl mb-3">👤</div>
-                <h1 class="text-xl font-bold text-blue-900">E-Library</h1>
-                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($_SESSION['name']) ?></p>
+                <!-- Ikon Profile Dinamis -->
+                <div class="w-16 h-16 <?= ($role == 'PENERBIT') ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' ?> rounded-full flex items-center justify-center text-2xl mb-3">
+                    <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
+                </div>
+                <h1 class="text-xl font-bold <?= ($role == 'PENERBIT') ? 'text-purple-900' : 'text-blue-900' ?>">
+                    <?= ($role == 'PENERBIT') ? 'Publisher' : 'E-Library' ?>
+                </h1>
+                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($current_user['name']) ?></p>
             </div>
 
             <nav class="p-4 space-y-2">
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'ADMIN'): ?>
+                <?php if ($role == 'ADMIN'): ?>
                     <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
                         <span>⚡</span> Admin Panel
                     </a>
                 <?php endif; ?>
 
-                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>📚</span> Katalog Buku
+                <!-- Link Dashboard Dinamis -->
+                <?php $dash_link = ($role == 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php'; ?>
+                <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <span>📚</span> Katalog
                 </a>
-                <!-- Menu History Aktif -->
-                <a href="history.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
-                    <span>🕒</span> Riwayat Baca
+
+                <!-- Tombol Upload Karya (Hanya Penerbit) -->
+                <?php if ($role == 'PENERBIT'): ?>
+                    <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                        <span>📤</span> Upload Karya
+                    </a>
+                <?php endif; ?>
+
+                <!-- Menu History Aktif (Style Dinamis) -->
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?>">
+                    <span>🕒</span> Riwayat
                 </a>
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>⚙️</span> Profil Saya
+
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <span>⚙️</span> Profil
                 </a>
+
+                <!-- Tombol Request Penerbit (Hanya User) -->
+                <?php if ($role == 'USER'): ?>
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <?php if ($current_user['request_penerbit'] == '0'): ?>
+                            <form method="POST">
+                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-lg font-medium transition">
+                                    <span>🌟</span> Jadi Penerbit
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">⏳ Menunggu Konfirmasi</div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
                 </a>
@@ -93,11 +170,9 @@ $books = mysqli_query($conn, $sql);
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
                         </svg>
                     </button>
-                    <h1 class="font-bold text-blue-900 text-lg">Riwayat Baca</h1>
+                    <h1 class="font-bold <?= $text_main ?> text-lg">Riwayat Baca</h1>
                 </div>
-                <a href="profile.php" class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm border border-blue-200">
-                    👤
-                </a>
+                <a href="profile.php" class="w-8 h-8 <?= ($role == 'PENERBIT') ? 'bg-purple-100' : 'bg-blue-100' ?> rounded-full flex items-center justify-center text-sm border">👤</a>
             </div>
 
             <div class="max-w-6xl mx-auto">
@@ -132,7 +207,7 @@ $books = mysqli_query($conn, $sql);
 
                                 <div class="p-5 flex-1 flex flex-col">
                                     <div class="flex justify-between items-start mb-2">
-                                        <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 rounded">
+                                        <div class="text-xs font-semibold <?= ($role == 'PENERBIT') ? 'text-purple-600 bg-purple-50' : 'text-blue-600 bg-blue-50' ?> tracking-wide uppercase px-2 py-1 rounded">
                                             <?= $book['type'] ?>
                                         </div>
                                     </div>
@@ -143,7 +218,7 @@ $books = mysqli_query($conn, $sql);
                                     <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
 
                                     <div class="mt-auto pt-4 border-t border-gray-100">
-                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-gray-100 text-gray-700 hover:bg-blue-600 hover:text-white rounded-lg font-medium transition">
+                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
                                             Lanjutkan Membaca
                                         </a>
                                     </div>
@@ -156,7 +231,7 @@ $books = mysqli_query($conn, $sql);
                         <div class="text-4xl mb-4">💤</div>
                         <h3 class="text-lg font-medium text-gray-900">Belum ada riwayat baca</h3>
                         <p class="text-gray-500 text-sm mb-4">Ayo mulai membaca buku pertamamu!</p>
-                        <a href="dashboard-user.php" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold transition">
+                        <a href="<?= $dash_link ?>" class="px-6 py-2 <?= $btn_main ?> text-white rounded-lg font-bold transition">
                             Cari Buku
                         </a>
                     </div>
@@ -165,12 +240,10 @@ $books = mysqli_query($conn, $sql);
         </main>
     </div>
 
-    <!-- Script Sidebar Mobile -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
-
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
