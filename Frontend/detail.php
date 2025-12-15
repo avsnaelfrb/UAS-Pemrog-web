@@ -6,12 +6,40 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Cek Role & ID
+$role = isset($_SESSION['role']) ? $_SESSION['role'] : 'USER';
 if (!isset($_GET['id'])) {
-    header("Location: dashboard-user.php");
+    if ($role == 'PENERBIT') header("Location: dashboard-publisher.php");
+    else if ($role == 'ADMIN') header("Location: dashboard-admin.php");
+    else header("Location: dashboard-user.php");
     exit;
 }
 
 $id = (int)$_GET['id'];
+$user_id = $_SESSION['user_id'];
+
+// --- CONFIG TEMA DINAMIS (Purple untuk Penerbit, Blue untuk User) ---
+$theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
+
+// Variabel Kelas CSS Tailwind
+$bg_soft = "bg-$theme-50";          // Background lembut
+$bg_main = "bg-$theme-600";         // Background tombol utama
+$bg_hover = "hover:bg-$theme-700";  // Hover tombol utama
+$text_main = "text-$theme-700";     // Teks utama
+$text_dark = "text-$theme-900";     // Teks gelap (judul)
+$border_main = "border-$theme-100"; // Border halus
+$hover_soft = "hover:bg-$theme-50"; // Hover pada menu sidebar
+$hover_text = "hover:text-$theme-700"; // Hover teks menu
+
+// --- LOGIKA REQUEST PENERBIT (Hanya untuk User) ---
+if (isset($_POST['request_publisher']) && $role == 'USER') {
+    mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
+    echo "<script>alert('Permintaan dikirim! Tunggu konfirmasi Admin.');</script>";
+}
+
+// Ambil Data User
+$u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
+$current_user = mysqli_fetch_assoc($u_res);
 
 // Ambil Detail Buku
 $query = "
@@ -28,9 +56,14 @@ $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
 
 if (!$book) {
-    echo "<script>alert('Buku tidak ditemukan!'); window.location='dashboard-user.php';</script>";
+    echo "<script>alert('Buku tidak ditemukan!'); window.history.back();</script>";
     exit;
 }
+
+// Link Kembali Dinamis
+$back_link = 'dashboard-user.php';
+if ($role == 'PENERBIT') $back_link = 'dashboard-publisher.php';
+if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 ?>
 
 <!DOCTYPE html>
@@ -51,7 +84,7 @@ if (!$book) {
 <body class="bg-gray-50 font-sans">
 
     <!-- OVERLAY MOBILE -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
 
     <div class="flex min-h-screen">
 
@@ -63,29 +96,61 @@ if (!$book) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl mb-3">👤</div>
-                <h1 class="text-xl font-bold text-blue-900">E-Library</h1>
-                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($_SESSION['name']) ?></p>
+
+                <!-- Logo & Nama -->
+                <div class="w-16 h-16 <?= $bg_soft ?> <?= $text_main ?> rounded-full flex items-center justify-center text-2xl mb-3">
+                    <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
+                </div>
+                <h1 class="text-xl font-bold <?= $text_dark ?>">
+                    <?= ($role == 'PENERBIT') ? 'Publisher' : 'E-Library' ?>
+                </h1>
+                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($current_user['name']) ?></p>
             </div>
 
             <nav class="p-4 space-y-2">
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'ADMIN'): ?>
+                <?php if ($role == 'ADMIN'): ?>
                     <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
                         <span>⚡</span> Admin Panel
                     </a>
                 <?php endif; ?>
 
-                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
-                    <span>📚</span> Katalog Buku
-                </a>
-                <!-- MENU HISTORY BARU -->
-                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>🕒</span> Riwayat Baca
+                <!-- Menu Katalog (Aktif karena sedang melihat detail buku) -->
+                <a href="<?= $back_link ?>" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?> shadow-sm">
+                    <span>📚</span> Katalog
                 </a>
 
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>⚙️</span> Profil Saya
+                <!-- Menu Khusus Penerbit -->
+                <?php if ($role == 'PENERBIT'): ?>
+                    <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
+                        <span>📤</span> Upload Karya
+                    </a>
+                <?php endif; ?>
+
+                <!-- Menu Umum -->
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
+                    <span>🕒</span> Riwayat
                 </a>
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
+                    <span>⚙️</span> Profil
+                </a>
+
+                <!-- Request Penerbit (Khusus User) -->
+                <?php if ($role == 'USER'): ?>
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <?php if ($current_user['request_penerbit'] == '0'): ?>
+                            <form method="POST">
+                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-lg font-medium transition">
+                                    <span>🌟</span> Jadi Penerbit
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">
+                                ⏳ Menunggu Konfirmasi
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
                 </a>
@@ -103,13 +168,16 @@ if (!$book) {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
                         </svg>
                     </button>
-                    <h1 class="font-bold text-blue-900 text-lg">Detail Buku</h1>
+                    <h1 class="font-bold <?= $text_dark ?> text-lg">Detail Buku</h1>
+                </div>
+                <div class="w-8 h-8 <?= $bg_soft ?> rounded-full flex items-center justify-center text-sm border <?= $border_main ?>">
+                    <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
                 </div>
             </div>
 
             <div class="max-w-5xl mx-auto">
                 <!-- Tombol Kembali -->
-                <a href="dashboard-user.php" class="inline-flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition">
+                <a href="<?= $back_link ?>" class="inline-flex items-center text-gray-500 <?= $hover_text ?> mb-6 font-medium transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
@@ -121,7 +189,6 @@ if (!$book) {
 
                         <!-- Kolom Kiri: Cover & Tombol Desktop -->
                         <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-6 md:p-8 border-r border-gray-100 flex flex-col items-center">
-                            <!-- Cover Image -->
                             <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6">
                                 <?php if ($book['cover']): ?>
                                     <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover">
@@ -133,11 +200,10 @@ if (!$book) {
                                 <?php endif; ?>
                             </div>
 
-                            <!-- TOMBOL BACA (DESKTOP VERSION) -->
-                            <!-- Class 'hidden md:block' artinya Sembunyi di Mobile, Muncul di Desktop -->
+                            <!-- TOMBOL BACA (DESKTOP) -->
                             <div class="hidden md:block w-full">
                                 <?php if ($book['file_exists']): ?>
-                                    <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                                    <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                         </svg>
@@ -153,11 +219,10 @@ if (!$book) {
 
                         <!-- Kolom Kanan: Detail & Tombol Mobile -->
                         <div class="md:w-2/3 lg:w-3/4 p-6 md:p-8 flex flex-col h-full">
-
-                            <!-- Informasi Buku -->
                             <div class="flex-1">
+                                <!-- Badges -->
                                 <div class="flex flex-wrap items-center gap-2 mb-4">
-                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full border border-blue-200 uppercase tracking-wide">
+                                    <span class="px-3 py-1 <?= $bg_soft ?> <?= $text_main ?> text-xs font-bold rounded-full border <?= $border_main ?> uppercase tracking-wide">
                                         <?= $book['type'] ?>
                                     </span>
                                     <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
@@ -165,7 +230,7 @@ if (!$book) {
                                     </span>
                                 </div>
 
-                                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2 leading-tight">
+                                <h1 class="text-3xl md:text-4xl font-bold <?= $text_dark ?> mb-2 leading-tight">
                                     <?= htmlspecialchars($book['title']) ?>
                                 </h1>
                                 <p class="text-lg text-gray-600 mb-6 font-medium">
@@ -197,11 +262,10 @@ if (!$book) {
                                 </div>
                             </div>
 
-                            <!-- TOMBOL BACA (MOBILE VERSION) -->
-                            <!-- Class 'block md:hidden' artinya Muncul di Mobile, Sembunyi di Desktop -->
+                            <!-- TOMBOL BACA (MOBILE) -->
                             <div class="block md:hidden mt-8 pt-6 border-t border-gray-100">
                                 <?php if ($book['file_exists']): ?>
-                                    <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 text-center transition flex items-center justify-center gap-2 text-lg">
+                                    <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-4 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-xl shadow-lg shadow-<?= $theme ?>-200 text-center transition flex items-center justify-center gap-2 text-lg">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                         </svg>
