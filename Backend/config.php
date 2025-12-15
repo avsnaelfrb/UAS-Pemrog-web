@@ -13,9 +13,8 @@ if (!$conn) {
 session_start();
 
 mysqli_query($conn, "SET SESSION sql_mode = ''");
-ini_set('memory_limit', '512M'); // Memory limit tetap dijaga
+ini_set('memory_limit', '512M'); 
 
-// Base URL Aplikasi (Sesuaikan jika folder project berubah)
 $base_url = "http://localhost/web-perpus-UAS";
 
 function redirect($url)
@@ -24,24 +23,16 @@ function redirect($url)
     exit;
 }
 
-/**
- * Fungsi untuk mengupload file ke folder fisik
- * @param array $file - Array dari $_FILES['input_name']
- * @param string $destination - Path folder tujuan (misal: '../assets/books/')
- * @return string|false - Mengembalikan nama file baru jika sukses, false jika gagal
- */
+
 function uploadFile($file, $destination)
 {
-    // Cek error upload dasar
     if ($file['error'] !== UPLOAD_ERR_OK) {
         if ($file['error'] === UPLOAD_ERR_NO_FILE) return false;
 
-        // Kode error upload PHP untuk debugging
         echo "<script>alert('Upload Gagal! Kode Error PHP: " . $file['error'] . "');</script>";
         return false;
     }
 
-    // Buat folder jika belum ada
     if (!file_exists($destination)) {
         if (!mkdir($destination, 0777, true)) {
             echo "<script>alert('Gagal membuat folder: $destination. Cek permission!');</script>";
@@ -49,17 +40,14 @@ function uploadFile($file, $destination)
         }
     }
 
-    // Validasi apakah folder bisa ditulis
     if (!is_writable($destination)) {
         echo "<script>alert('Folder tujuan tidak bisa ditulis: $destination. Jalankan chmod 777!');</script>";
         return false;
     }
 
-    // Generate nama file unik: timestamp_random.ext
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $fileName = time() . '_' . rand(100, 999) . '.' . $ext;
 
-    // Sanitasi nama file agar aman dari karakter aneh
     $fileName = preg_replace("/[^a-zA-Z0-9._-]/", "", $fileName);
 
     $target = $destination . '/' . $fileName;
@@ -72,10 +60,6 @@ function uploadFile($file, $destination)
     }
 }
 
-/**
- * Fungsi baru untuk menghapus file fisik
- * Penting agar server tidak penuh sampah saat buku dihapus dari DB
- */
 function deleteFile($filePath)
 {
     if (file_exists($filePath)) {
@@ -84,7 +68,6 @@ function deleteFile($filePath)
     return false;
 }
 
-// Fungsi Helper untuk Badge Status
 function getStatusBadge($status)
 {
     switch ($status) {
