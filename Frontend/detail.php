@@ -37,20 +37,17 @@ if (isset($_POST['request_publisher']) && $role == 'USER') {
     echo "<script>alert('Permintaan dikirim! Tunggu konfirmasi Admin.');</script>";
 }
 
-// --- LOGIKA SAVE/UNSAVE BOOK (BARU) ---
+// --- LOGIKA SAVE/UNSAVE BOOK ---
 $msg_save = '';
-// Cek status simpan saat ini
 $check_save = mysqli_query($conn, "SELECT id FROM saved_books WHERE user_id=$user_id AND book_id=$id");
 $is_saved = (mysqli_num_rows($check_save) > 0);
 
 if (isset($_POST['toggle_save'])) {
     if ($is_saved) {
-        // Hapus dari simpanan
         mysqli_query($conn, "DELETE FROM saved_books WHERE user_id=$user_id AND book_id=$id");
         $is_saved = false;
         $msg_save = "Buku dihapus dari koleksi.";
     } else {
-        // Tambahkan ke simpanan
         mysqli_query($conn, "INSERT INTO saved_books (user_id, book_id) VALUES ($user_id, $id)");
         $is_saved = true;
         $msg_save = "Buku berhasil disimpan ke koleksi!";
@@ -61,7 +58,7 @@ if (isset($_POST['toggle_save'])) {
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 
-// Ambil Detail Buku
+// Ambil Detail Buku (Termasuk kolom link)
 $query = "
     SELECT b.*, 
     GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names,
@@ -106,14 +103,12 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
 <body class="bg-gray-50 font-sans">
 
-    <!-- Notifikasi Save -->
     <?php if ($msg_save): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
             ✅ <?= $msg_save ?>
         </div>
     <?php endif; ?>
 
-    <!-- OVERLAY MOBILE -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
 
     <div class="flex min-h-screen">
@@ -126,8 +121,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
-
-                <!-- Logo & Nama -->
                 <div class="w-16 h-16 <?= $bg_soft ?> <?= $text_main ?> rounded-full flex items-center justify-center text-2xl mb-3">
                     <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
                 </div>
@@ -149,6 +142,9 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                 </a>
 
                 <?php if ($role == 'PENERBIT'): ?>
+                    <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
+                        <span>📂</span> Terbitan Saya
+                    </a>
                     <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                         <span>📤</span> Upload Karya
                     </a>
@@ -157,32 +153,12 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                     <span>🕒</span> Riwayat
                 </a>
-
-                <!-- Menu Koleksi Baru -->
                 <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                     <span>🔖</span> Koleksi
                 </a>
-
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                     <span>⚙️</span> Profile
                 </a>
-
-                <?php if ($role == 'USER'): ?>
-                    <div class="pt-4 mt-4 border-t border-gray-200">
-                        <?php if ($current_user['request_penerbit'] == '0'): ?>
-                            <form method="POST">
-                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                                    <span>✒️</span> Jadi Penerbit
-                                </button>
-                            </form>
-                        <?php else: ?>
-                            <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">
-                                ⏳ Menunggu Konfirmasi
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
                 </a>
@@ -191,7 +167,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
         <!-- MAIN CONTENT -->
         <main class="flex-1 lg:ml-64 p-4 lg:p-8 transition-all duration-300">
-
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
@@ -216,8 +191,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="flex flex-col md:flex-row">
-
-                        <!-- Kolom Kiri: Cover & Tombol Desktop -->
                         <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-6 md:p-8 border-r border-gray-100 flex flex-col items-center">
                             <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6">
                                 <?php if ($hasCover): ?>
@@ -230,9 +203,15 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                 <?php endif; ?>
                             </div>
 
-                            <!-- TOMBOL ACTION (DESKTOP) -->
-                            <div class="hidden md:flex flex-col gap-3 w-full">
-                                <?php if ($book['file_exists']): ?>
+                            <!-- TOMBOL ACTION (LOGIKA BARU) -->
+                            <div class="w-full flex flex-col gap-3">
+                                <?php if ($book['type'] == 'ARTICLE' && !empty($book['link'])): ?>
+                                    <!-- Tipe Artikel: Buka Link -->
+                                    <a href="<?= htmlspecialchars($book['link']) ?>" target="_blank" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                                        <span>🌐</span> Buka Artikel
+                                    </a>
+                                <?php elseif ($book['file_exists']): ?>
+                                    <!-- Tipe Buku/Jurnal: Buka PDF -->
                                     <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
                                         <span>📖</span> Baca Sekarang
                                     </a>
@@ -246,13 +225,12 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                 <form method="POST" class="w-full">
                                     <button type="submit" name="toggle_save" class="w-full py-3 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300' ?> font-bold rounded-lg transition flex items-center justify-center gap-2">
                                         <span><?= $is_saved ? '🔖' : '🏷️' ?></span>
-                                        <?= $is_saved ? 'Tersimpan' : 'Simpan Buku' ?>
+                                        <?= $is_saved ? 'Tersimpan' : 'Simpan' ?>
                                     </button>
                                 </form>
                             </div>
                         </div>
 
-                        <!-- Kolom Kanan: Detail & Tombol Mobile -->
                         <div class="md:w-2/3 lg:w-3/4 p-6 md:p-8 flex flex-col h-full">
                             <div class="flex-1">
                                 <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -293,33 +271,10 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- TOMBOL ACTION (MOBILE) -->
-                            <div class="block md:hidden mt-8 pt-6 border-t border-gray-100 space-y-3">
-                                <?php if ($book['file_exists']): ?>
-                                    <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-4 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-xl shadow-lg shadow-<?= $theme ?>-200 text-center transition flex items-center justify-center gap-2 text-lg">
-                                        <span>📖</span> Baca Sekarang
-                                    </a>
-                                <?php else: ?>
-                                    <button disabled class="w-full py-4 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed">
-                                        File Tidak Tersedia
-                                    </button>
-                                <?php endif; ?>
-
-                                <!-- Tombol Simpan Mobile -->
-                                <form method="POST" class="w-full">
-                                    <button type="submit" name="toggle_save" class="w-full py-4 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-600' ?> font-bold rounded-xl transition flex items-center justify-center gap-2 text-lg">
-                                        <span><?= $is_saved ? '🔖' : '🏷️' ?></span>
-                                        <?= $is_saved ? 'Tersimpan' : 'Simpan Buku' ?>
-                                    </button>
-                                </form>
-                            </div>
-
                         </div>
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 
@@ -327,7 +282,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
-
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
