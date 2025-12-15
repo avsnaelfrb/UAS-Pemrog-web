@@ -53,3 +53,18 @@ function uploadFile($file, $destination)
         return false;
     }
 }
+
+// Fungsi Helper untuk Badge Status
+function getStatusBadge($status)
+{
+    switch ($status) {
+        case 'APPROVED':
+            return '<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Terbit</span>';
+        case 'PENDING':
+            return '<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Menunggu Review</span>';
+        case 'REJECTED':
+            return '<span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">Ditolak</span>';
+        default:
+            return '';
+    }
+}
