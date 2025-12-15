@@ -188,14 +188,14 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
                     <!-- Menu Profil Aktif -->
                     <a href="profile.php" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?>">
-                        <span>⚙️</span> Profil
+                        <span>⚙️</span> Profile
                     </a>
 
                     <?php if ($role == 'USER'): ?>
                         <div class="pt-4 mt-4 border-t border-gray-200">
                             <?php if ($user['request_penerbit'] == '0'): ?>
                                 <form method="POST">
-                                    <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-lg font-medium transition"><span>🌟</span> Jadi Penerbit</button>
+                                    <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>✒️</span> Jadi Penerbit</button>
                                 </form>
                             <?php else: ?>
                                 <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">⏳ Menunggu Konfirmasi</div>

@@ -138,21 +138,21 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <?php endif; ?>
 
                 <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
-                    <span>📚</span> Katalog Buku
+                    <span>📚</span> Katalog
                 </a>
-                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>🕒</span> Riwayat Baca
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg font-medium transition">
+                    <span>🕒</span> Riwayat
                 </a>
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium transition">
-                    <span>⚙️</span> Profil Saya
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg font-medium transition">
+                    <span>⚙️</span> Profile
                 </a>
 
                 <!-- TOMBOL REQUEST PENERBIT -->
                 <div class="pt-4 mt-4 border-t border-gray-200">
                     <?php if ($current_user['request_penerbit'] == '0'): ?>
                         <form method="POST">
-                            <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-lg font-medium transition">
-                                <span>🌟</span> Jadi Penerbit
+                            <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                                <span>✒️</span> Jadi Penerbit
                             </button>
                         </form>
                     <?php else: ?>
@@ -266,28 +266,32 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             <?php if (mysqli_num_rows($books) > 0): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 flex flex-col h-full group">
-                            <div class="h-64 bg-gray-100 relative overflow-hidden rounded-t-xl">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-x1 hover:shadow-lg hover:shadow-blue-100  transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
+                            <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
                                 <?php if ($book['cover']): ?>
-                                    <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    <img src="data:image/jpeg;base64,<?= base64_encode($book['cover']) ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                                         <span class="text-4xl mb-2">📚</span><span class="text-xs">No Cover</span>
                                     </div>
                                 <?php endif; ?>
+                                <!-- Overlay tipis saat hover -->
+                                <div class="absolute inset-0 bg-blue-900 bg-opacity-0 group-hover:bg-opacity-10 transition duration-300"></div>
                             </div>
-                            <div class="p-5 flex-1 flex flex-col">
+                            <div class="p-4 flex-1 flex flex-col">
+                                <!-- Type Badge -->
                                 <div class="flex justify-between items-start mb-2">
-                                    <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                    <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 w-fit rounded border border-blue-100">
                                         <?= $book['type'] ?>
                                     </div>
                                 </div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2" title="<?= htmlspecialchars($book['title']) ?>"><?= htmlspecialchars($book['title']) ?></h3>
-                                <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
+
+                                <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2 group-hover:text-blue-700 transition" title="<?= htmlspecialchars($book['title']) ?>"><?= htmlspecialchars($book['title']) ?></h3>
+                                <p class="text-sm text-gray-500 mb-3 "><?= htmlspecialchars($book['author']) ?></p>
 
                                 <div class="flex flex-wrap gap-1 mb-4">
                                     <?php foreach (explode(',', $book['genre_names']) as $gn): if (trim($gn) == '') continue; ?>
-                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200"><?= trim($gn) ?></span>
+                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200 group-hover:border-blue-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition"><?= trim($gn) ?></span>
                                     <?php endforeach; ?>
                                 </div>
 

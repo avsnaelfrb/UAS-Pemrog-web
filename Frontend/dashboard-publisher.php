@@ -108,7 +108,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <span>🕒</span> Riwayat
                 </a>
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>⚙️</span> Profil
+                    <span>⚙️</span> Profile
                 </a>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
                     <span>🚪</span> Keluar
