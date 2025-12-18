@@ -1,5 +1,5 @@
 <?php
-require './api/Backend/config.php';
+require '../Backend/config.php';
 
 $error = '';
 $success = '';

@@ -4,12 +4,13 @@ mysqli_report(MYSQLI_REPORT_OFF);
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$host = "localhost";
-$user = "root";
+$host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com";
+$user = "2UWBFUk7cxV4hiB.root";
 $pass = "";
-$db   = "elibrary_db";
+$db   = "test";
+$port = 4000;
 
-$conn = mysqli_connect($host, $user, $pass, $db);
+$conn = mysqli_connect($host, $user, $pass, $db, $port);
 
 if (!$conn) {
     die("Koneksi gagal: " . mysqli_connect_error());

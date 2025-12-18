@@ -1,5 +1,5 @@
 <?php
-require './api/Backend/config.php';
+require '../Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     redirect('login.php');

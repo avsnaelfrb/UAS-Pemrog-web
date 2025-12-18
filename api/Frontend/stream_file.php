@@ -8,7 +8,7 @@ ini_set('display_errors', 0);
 // 2. Bersihkan buffer output sebelum script jalan
 if (ob_get_level()) ob_end_clean();
 
-require './api/Backend/config.php';
+require '../Backend/config.php';
 
 // 3. Bersihkan buffer lagi setelah require config
 ob_clean();

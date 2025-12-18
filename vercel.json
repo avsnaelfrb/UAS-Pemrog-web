@@ -6,8 +6,20 @@
     },
     "routes": [
       {
-        "src": "/(.*)",
+        "src": "/",
         "dest": "/api/index.php"
+      },
+      {
+        "src": "/Frontend/(.*)",
+        "dest": "/api/Frontend/$1"
+      },
+      {
+        "src": "/Backend/(.*)",
+        "dest": "/api/Backend/$1"
+      },
+      {
+        "src": "/uploads/(.*)",
+        "dest": "/api/uploads/$1"
       }
     ]
   }

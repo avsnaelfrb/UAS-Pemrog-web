@@ -4,7 +4,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require './api/Backend/config.php';
+require '../Backend/config.php';
 
 // CEK LOGIN
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {

@@ -1,5 +1,5 @@
 <?php
-require './api/Backend/config.php';
+require '../Backend/config.php';
 
 // Cek Sesi & Role
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
