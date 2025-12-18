@@ -1,12 +1,24 @@
 <?php
 
 /**
- * KONFIGURASI DATABASE & SESSION - RAILWAY URL VERSION
+ * KONFIGURASI DATABASE & SESSION - RAILWAY PRODUCTION VERSION
+ * Versi ini dilengkapi dengan error reporting untuk mempermudah debugging.
  */
 
-// Memulai session secara standar
+// 1. Aktifkan Error Reporting untuk Debugging (Hanya selama masa perbaikan)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// 2. Memulai session secara standar
 if (session_status() === PHP_SESSION_NONE) {
+    // Pastikan session tersimpan dengan benar di lingkungan cloud
+    ini_set('session.cookie_path', '/');
     session_start();
+}
+
+// 3. Cek apakah ekstensi MySQLi terpasang (Penting untuk Railway)
+if (!extension_loaded('mysqli')) {
+    die("FATAL: Ekstensi 'mysqli' tidak ditemukan. Pastikan composer.json Anda sudah menyertakan 'ext-mysqli'.");
 }
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -14,18 +26,21 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 /**
  * PENGATURAN DATABASE MENGGUNAKAN CONNECTION STRING
  */
-// Railway biasanya menyediakan variabel 'DATABASE_URL'. 
-// Jika tidak ada, kita pakai link yang Anda berikan sebagai default.
-$db_url = "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
+// Railway menyediakan variabel 'MYSQL_URL' atau 'DATABASE_URL'.
+$db_url = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
 
 // Bedah URL untuk mendapatkan komponen database
 $db_parts = parse_url($db_url);
 
-$host = $db_parts['host'];
-$user = $db_parts['user'];
-$pass = $db_parts['pass'];
-$db   = ltrim($db_parts['path'], '/');
-$port = $db_parts['port'];
+if (!$db_parts) {
+    die("FATAL: Format DATABASE_URL tidak valid.");
+}
+
+$host = $db_parts['host'] ?? 'localhost';
+$user = $db_parts['user'] ?? 'root';
+$pass = $db_parts['pass'] ?? '';
+$db   = isset($db_parts['path']) ? ltrim($db_parts['path'], '/') : 'railway';
+$port = $db_parts['port'] ?? 3306;
 
 try {
     // Koneksi menggunakan data hasil bedah URL
@@ -33,15 +48,18 @@ try {
     mysqli_query($conn, "SET SESSION sql_mode = ''");
     mysqli_query($conn, "SET time_zone = '+07:00'");
 } catch (Exception $e) {
-    die("Koneksi database gagal: " . $e->getMessage());
+    // Tampilkan error spesifik jika koneksi gagal
+    die("Koneksi database gagal: " . $e->getMessage() . " (Host: $host, DB: $db)");
 }
 
 /**
- * FUNGSI HELPER ORIGINAL
+ * FUNGSI HELPER
  */
 
 function redirect($url)
 {
+    // Pastikan session ditulis sebelum redirect
+    session_write_close();
     header("Location: $url");
     exit();
 }
