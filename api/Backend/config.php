@@ -9,7 +9,7 @@ ini_set('display_errors', 1);
 
 $host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com";
 $user = "2UWBFUk7cxV4hiB.root"; 
-$pass = ""; 
+$password = "qiDCLtau7KoVXS4L"; 
 $db   = "test";
 $port = 4000;
 
@@ -21,7 +21,7 @@ $success = mysqli_real_connect(
     $conn,
     $host,
     $user,
-    $pass,
+    $password,
     $db,
     $port,
     NULL,
