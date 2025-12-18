@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 $error = '';
 $success = '';

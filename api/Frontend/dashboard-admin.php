@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 // Cek Sesi & Role
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
@@ -12,14 +12,11 @@ $error_msg = '';
 $active_page = isset($_GET['page']) ? $_GET['page'] : 'books';
 
 // --- LOGIKA MODERASI BUKU (Hapus Konten Tidak Pantas) ---
-// UPDATED: Menghapus file fisik juga agar storage tidak penuh
 if (isset($_GET['delete_book'])) {
     $id = (int)$_GET['delete_book'];
 
-    // 1. Ambil nama file sebelum dihapus datanya
     $q_file = mysqli_query($conn, "SELECT cover, file_path FROM books WHERE id=$id");
     if ($row_file = mysqli_fetch_assoc($q_file)) {
-        // 2. Hapus File Fisik
         $dirBooks = "../uploads/books/";
         $dirCovers = "../uploads/covers/";
 
@@ -31,7 +28,6 @@ if (isset($_GET['delete_book'])) {
         }
     }
 
-    // 3. Hapus Data dari Database
     if (mysqli_query($conn, "DELETE FROM books WHERE id=$id")) {
         header("Location: dashboard-admin.php?page=books&msg=deleted");
         exit;
@@ -80,7 +76,6 @@ if (isset($_GET['delete_user'])) {
 if (isset($_POST['save_genre'])) {
     $name = mysqli_real_escape_string($conn, $_POST['genre_name']);
     if (!empty($name)) {
-        // Cek duplikasi
         $check = mysqli_query($conn, "SELECT id FROM genres WHERE name = '$name'");
         if (mysqli_num_rows($check) > 0) {
             $error_msg = "Genre sudah ada!";
@@ -92,7 +87,6 @@ if (isset($_POST['save_genre'])) {
 }
 if (isset($_GET['delete_genre'])) {
     $gid = (int)$_GET['delete_genre'];
-    // Opsional: Cek apakah genre dipakai buku (untuk keamanan data, bisa ditambahkan logic blokir hapus jika dipakai)
     mysqli_query($conn, "DELETE FROM genres WHERE id=$gid");
     header("Location: dashboard-admin.php?page=genres&msg=deleted");
     exit;

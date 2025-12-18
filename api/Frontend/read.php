@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     redirect('login.php');
@@ -12,7 +12,6 @@ if (!isset($_GET['id'])) {
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// 1. Ambil Judul Buku (Logic DB masih sama karena table books masih punya kolom title)
 $query = "SELECT title FROM books WHERE id = $id";
 $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
@@ -21,8 +20,6 @@ if (!$book) {
     die("Buku tidak ditemukan.");
 }
 
-// 2. Simpan ke History
-// Menggunakan ON DUPLICATE KEY UPDATE agar jika sudah pernah baca, update waktunya saja
 $insert_history = "INSERT INTO history (user_id, book_id, read_at) 
                    VALUES ($user_id, $id, NOW()) 
                    ON DUPLICATE KEY UPDATE read_at = NOW()";

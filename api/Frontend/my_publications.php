@@ -1,12 +1,10 @@
 <?php
-// Debugging Error (PENTING AGAR TIDAK BLANK)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
-// CEK KHUSUS: Hanya Penerbit
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
     header("Location: login.php");
     exit;
@@ -15,11 +13,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
 $user_id = $_SESSION['user_id'];
 $message = '';
 
-// --- LOGIKA HAPUS BUKU ---
 if (isset($_GET['delete'])) {
     $book_id = (int)$_GET['delete'];
 
-    // Pastikan buku ini milik si penerbit
     $check = mysqli_query($conn, "SELECT id FROM books WHERE id=$book_id AND uploaded_by=$user_id");
 
     if (!$check) {
@@ -28,14 +24,12 @@ if (isset($_GET['delete'])) {
 
     if (mysqli_num_rows($check) > 0) {
 
-        // Hapus File Fisik
         $q_file = mysqli_query($conn, "SELECT cover, file_path FROM books WHERE id=$book_id");
         $row_file = mysqli_fetch_assoc($q_file);
 
         $dirBooks = "../uploads/books/";
         $dirCovers = "../uploads/covers/";
 
-        // Gunakan fungsi deleteFile jika ada di config, atau unlink manual
         if (!empty($row_file['file_path'])) {
             if (function_exists('deleteFile')) {
                 deleteFile($dirBooks . $row_file['file_path']);

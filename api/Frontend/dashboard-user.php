@@ -1,12 +1,11 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// Redirect jika login sebagai PENERBIT tapi masuk ke halaman USER
 if ($_SESSION['role'] == 'PENERBIT') {
     header("Location: dashboard-publisher.php");
     exit;
@@ -15,17 +14,15 @@ if ($_SESSION['role'] == 'PENERBIT') {
 $user_id = $_SESSION['user_id'];
 $message = '';
 
-// --- LOGIKA REQUEST PENERBIT ---
 if (isset($_POST['request_publisher'])) {
     mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
     $message = "Permintaan dikirim! Tunggu konfirmasi Admin.";
 }
 
-// Refresh User Data
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 
-// --- LOGIKA FILTER & PENCARIAN ---
+
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
 $filter_type = isset($_GET['type']) ? $_GET['type'] : '';

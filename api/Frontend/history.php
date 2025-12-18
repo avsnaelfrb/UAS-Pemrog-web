@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -7,30 +7,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$role = $_SESSION['role']; // Ambil Role
+$role = $_SESSION['role']; 
 $message = '';
 
-// --- CONFIG TEMA BERDASARKAN ROLE ---
 $theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
-// Variable warna dinamis untuk class Tailwind
 $bg_soft = "bg-$theme-50";
 $text_main = "text-$theme-700";
 $border_main = "border-$theme-100";
 $hover_soft = "hover:bg-$theme-50";
 $btn_main = "bg-$theme-600 hover:bg-$theme-700";
 
-// --- LOGIKA REQUEST PENERBIT (Untuk User Biasa) ---
 if (isset($_POST['request_publisher'])) {
     mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
     $message = "Permintaan dikirim! Tunggu konfirmasi Admin.";
 }
 
-// Ambil Data User & Genre
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
-// Query History
 $sql = "
     SELECT b.id, b.title, b.author, b.cover, b.type, h.read_at,
     GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 

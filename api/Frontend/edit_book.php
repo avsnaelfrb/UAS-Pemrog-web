@@ -1,12 +1,10 @@
 <?php
-// Tampilkan semua error untuk debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
-// CEK LOGIN
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
     header("Location: login.php");
     exit;
@@ -16,7 +14,6 @@ $user_id = $_SESSION['user_id'];
 $id_buku = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $error_msg = '';
 
-// --- 1. AMBIL DATA BUKU ---
 $query_check = "SELECT * FROM books WHERE id = $id_buku AND uploaded_by = $user_id";
 $result_check = mysqli_query($conn, $query_check);
 
@@ -27,14 +24,12 @@ if (!$result_check || mysqli_num_rows($result_check) == 0) {
 
 $book = mysqli_fetch_assoc($result_check);
 
-// Ambil Genre
 $current_genres = [];
 $q_genre = mysqli_query($conn, "SELECT genre_id FROM book_genres WHERE book_id = $id_buku");
 while ($row = mysqli_fetch_assoc($q_genre)) {
     $current_genres[] = $row['genre_id'];
 }
 
-// --- 2. PROSES UPDATE ---
 if (isset($_POST['update_karya'])) {
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $author = mysqli_real_escape_string($conn, $_POST['author']);
@@ -43,12 +38,10 @@ if (isset($_POST['update_karya'])) {
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $selected_genres = isset($_POST['genres']) ? $_POST['genres'] : [];
 
-    // Gunakan Null Coalescing (??) untuk mencegah error jika kolom belum ada
     $pdfFilename = $book['file_path'] ?? null;
     $articleLink = $book['link'] ?? null;
     $coverFilename = $book['cover'] ?? null;
 
-    // LOGIKA TIPE
     if ($type == 'ARTICLE') {
         if (!empty($_POST['link'])) {
             $articleLink = mysqli_real_escape_string($conn, $_POST['link']);
@@ -63,7 +56,6 @@ if (isset($_POST['update_karya'])) {
             if (function_exists('uploadFile')) {
                 $uploadResult = uploadFile($_FILES['file_book'], $dirBooks);
                 if ($uploadResult) {
-                    // Hapus file lama
                     if ($pdfFilename && file_exists($dirBooks . '/' . $pdfFilename)) {
                         @unlink($dirBooks . '/' . $pdfFilename);
                     }
@@ -78,7 +70,6 @@ if (isset($_POST['update_karya'])) {
         $articleLink = NULL;
     }
 
-    // LOGIKA COVER
     if (!$error_msg && isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
         $dirCovers = "../uploads/covers";
         if (function_exists('uploadFile')) {
@@ -92,7 +83,6 @@ if (isset($_POST['update_karya'])) {
         }
     }
 
-    // EXECUTE UPDATE
     if (!$error_msg) {
         $query = "UPDATE books SET 
                   title=?, author=?, description=?, year=?, type=?, 
@@ -105,7 +95,6 @@ if (isset($_POST['update_karya'])) {
             mysqli_stmt_bind_param($stmt, "sssissssi", $title, $author, $description, $year, $type, $coverFilename, $pdfFilename, $articleLink, $id_buku);
 
             if (mysqli_stmt_execute($stmt)) {
-                // Update Genre
                 mysqli_query($conn, "DELETE FROM book_genres WHERE book_id = $id_buku");
                 if (!empty($selected_genres)) {
                     foreach ($selected_genres as $gid) {
@@ -125,7 +114,6 @@ if (isset($_POST['update_karya'])) {
     }
 }
 
-// Data Pendukung
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);

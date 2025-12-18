@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
 // CEK KHUSUS: Hanya Penerbit
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
@@ -9,15 +9,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
 
 $user_id = $_SESSION['user_id'];
 
-// 1. Ambil Data Genre untuk Dropdown Filter
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
-// 2. Tangkap Input Filter
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
 $filter_type = isset($_GET['type']) ? $_GET['type'] : '';
-$filter_genres = isset($_GET['genres']) ? $_GET['genres'] : []; // Array genres
+$filter_genres = isset($_GET['genres']) ? $_GET['genres'] : [];
 
-// 3. LOGIKA SEARCH BUKU UTAMA (Katalog)
 $sql = "SELECT b.id, b.title, b.author, b.cover, b.type, GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
         FROM books b 
         LEFT JOIN book_genres bg ON b.id = bg.book_id 
@@ -30,7 +27,7 @@ if ($search) {
 if ($filter_type) {
     $sql .= " AND type = '$filter_type'";
 }
-// Filter Genre (Multi-select)
+
 if (!empty($filter_genres)) {
     $genre_ids = array_map('intval', $filter_genres);
     $ids_string = implode(',', $genre_ids);
@@ -40,7 +37,6 @@ if (!empty($filter_genres)) {
 $sql .= " GROUP BY b.id ORDER BY b.created_at DESC";
 $books = mysqli_query($conn, $sql);
 
-// Helper Label Tipe untuk Dropdown
 $type_map = [
     '' => '📄 Semua Tipe',
     'BOOK' => '📘 Buku',

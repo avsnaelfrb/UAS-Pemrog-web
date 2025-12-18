@@ -1,13 +1,10 @@
 <?php
-// --- BARIS DEBUGGING (Hapus nanti jika sudah fix) ---
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// ----------------------------------------------------
 
-require '../Backend/config.php';
+require_once dirname(__DIR__) . '/Backend/config.php';
 
-// CEK KHUSUS: Hanya Penerbit
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
     header("Location: login.php");
     exit;
@@ -17,21 +14,18 @@ $user_id = $_SESSION['user_id'];
 $message = '';
 $error_msg = '';
 
-// --- LOGIKA UPLOAD KARYA ---
 if (isset($_POST['upload_karya'])) {
     $title = mysqli_real_escape_string($conn, $_POST['title']);
     $author = mysqli_real_escape_string($conn, $_POST['author']);
     $year = (int)$_POST['year'];
-    $type = $_POST['type']; // BOOK, JOURNAL, ARTICLE
+    $type = $_POST['type']; 
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $selected_genres = isset($_POST['genres']) ? $_POST['genres'] : [];
 
-    // Init Variabel (Penting agar tidak undefined)
     $pdfFilename = null;
     $articleLink = null;
     $coverFilename = null;
 
-    // 1. Validasi Input Berdasarkan Tipe
     if ($type == 'ARTICLE') {
         if (!empty($_POST['link'])) {
             $articleLink = mysqli_real_escape_string($conn, $_POST['link']);
@@ -39,10 +33,8 @@ if (isset($_POST['upload_karya'])) {
             $error_msg = "Link Artikel wajib diisi!";
         }
     } else {
-        // Buku/Jurnal wajib PDF
         $dirBooks = "../uploads/books";
         if (isset($_FILES['file_book']) && $_FILES['file_book']['error'] === UPLOAD_ERR_OK) {
-            // Cek apakah fungsi uploadFile ada
             if (!function_exists('uploadFile')) {
                 die("FATAL ERROR: Fungsi uploadFile() tidak ditemukan. Update file Backend/config.php Anda!");
             }
@@ -57,7 +49,6 @@ if (isset($_POST['upload_karya'])) {
         }
     }
 
-    // 2. Upload Cover (Opsional)
     $dirCovers = "../uploads/covers";
     if (!$error_msg && isset($_FILES['cover']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
         if (!function_exists('uploadFile')) {
@@ -67,26 +58,21 @@ if (isset($_POST['upload_karya'])) {
         if ($uploadResult) $coverFilename = $uploadResult;
     }
 
-    // 3. Simpan ke Database
     if (!$error_msg) {
-        // Debugging Query
         $query = "INSERT INTO books (title, author, description, year, type, cover, file_path, link, status, uploaded_by) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)";
 
         $stmt = mysqli_prepare($conn, $query);
 
         if (!$stmt) {
-            // Tampilkan error MySQL jika prepare gagal
             die("DATABASE ERROR (Prepare): " . mysqli_error($conn));
         }
 
-        // sssissssi -> string, string, string, int, string, string, string, string, int
         mysqli_stmt_bind_param($stmt, "sssissssi", $title, $author, $description, $year, $type, $coverFilename, $pdfFilename, $articleLink, $user_id);
 
         if (mysqli_stmt_execute($stmt)) {
             $new_id = mysqli_insert_id($conn);
 
-            // Simpan Genre
             if (!empty($selected_genres)) {
                 foreach ($selected_genres as $gid) {
                     $gid = (int)$gid;
@@ -95,10 +81,8 @@ if (isset($_POST['upload_karya'])) {
             }
             $message = "Karya berhasil diupload! Tunggu moderasi Admin.";
         } else {
-            // Tampilkan error jika execute gagal
             $error_msg = "DATABASE ERROR (Execute): " . mysqli_stmt_error($stmt);
 
-            // Hapus file jika gagal DB agar tidak nyampah
             if ($coverFilename) @unlink($dirCovers . '/' . $coverFilename);
             if ($pdfFilename) @unlink($dirBooks . '/' . $pdfFilename);
         }
@@ -106,7 +90,6 @@ if (isset($_POST['upload_karya'])) {
     }
 }
 
-// Data User & Genre
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
