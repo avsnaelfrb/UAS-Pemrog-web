@@ -16,7 +16,7 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
  */
 // Railway biasanya menyediakan variabel 'DATABASE_URL'. 
 // Jika tidak ada, kita pakai link yang Anda berikan sebagai default.
-$db_url = getenv('DATABASE_URL') ?: "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
+$db_url = "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
 
 // Bedah URL untuk mendapatkan komponen database
 $db_parts = parse_url($db_url);
