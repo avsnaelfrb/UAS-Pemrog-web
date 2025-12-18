@@ -7,29 +7,16 @@ mysqli_report(MYSQLI_REPORT_OFF);
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$host = "gateway01.ap-southeast-1.prod.aws.tidbcloud.com";
-$user = "2UWBFUk7cxV4hiB.root"; 
-$pass = "qiDCLtau7KoVXS4L"; 
-$db   = "test";
-$port = 4000;
+$host = getenv('DB_HOST');
+$user = getenv('DB_USER');
+$pass = getenv('DB_PASSWORD');
+$db   = getenv('DB_NAME');
+$port = getenv('DB_PORT');
 
-$conn = mysqli_init();
+$conn = mysqli_connect($host, $user, $pass, $db, $port);
 
-mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
-
-$success = mysqli_real_connect(
-    $conn,
-    $host,
-    $user,
-    $pass,
-    $db,
-    $port,
-    NULL,
-    MYSQLI_CLIENT_SSL
-);
-
-if (!$success) {
-    die("Koneksi Database Cloud Gagal: " . mysqli_connect_error());
+if (!$conn) {
+    die("Koneksi gagal: " . mysqli_connect_error());
 }
 
 if (session_status() === PHP_SESSION_NONE) {
