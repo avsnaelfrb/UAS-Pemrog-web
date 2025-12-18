@@ -7,15 +7,17 @@ mysqli_report(MYSQLI_REPORT_OFF);
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-$host = getenv('DB_HOST');
-$user = getenv('DB_USER');
-$pass = getenv('DB_PASSWORD');
-$db   = getenv('DB_NAME');
-$port = getenv('DB_PORT');
+$host = getenv('DB_HOST') ?: "localhost";
+$user = getenv('DB_USER') ?: "root";
+$pass = getenv('DB_PASSWORD') ?: "";
+$db   = getenv('DB_NAME') ?: "elibrary_db";
+$port = getenv('DB_PORT') ?: 3306;
 
-$conn = mysqli_connect($host, $user, $pass, $db, $port);
+$conn = mysqli_init();
 
-if (!$conn) {
+$success = mysqli_real_connect($conn, $host, $user, $pass, $db, $port);
+
+if (!$success) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 
