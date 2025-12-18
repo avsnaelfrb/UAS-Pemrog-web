@@ -1,8 +1,14 @@
 <?php
+
+/**
+ * File Reader - Menampilkan PDF viewer
+ * Dengan perbaikan Flow Navigasi (Dynamic Back Button)
+ */
 require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
-    redirect('login.php');
+    header("Location: login.php");
+    exit;
 }
 
 if (!isset($_GET['id'])) {
@@ -12,7 +18,8 @@ if (!isset($_GET['id'])) {
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-$query = "SELECT title FROM books WHERE id = $id";
+// Ambil Data Buku
+$query = "SELECT * FROM books WHERE id = $id";
 $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
 
@@ -20,11 +27,31 @@ if (!$book) {
     die("Buku tidak ditemukan.");
 }
 
-$insert_history = "INSERT INTO history (user_id, book_id, read_at) 
-                   VALUES ($user_id, $id, NOW()) 
-                   ON DUPLICATE KEY UPDATE read_at = NOW()";
-mysqli_query($conn, $insert_history);
+// Logika Navigasi Kembali (Dynamic Back URL)
+$from_page = isset($_GET['from']) ? $_GET['from'] : '';
 
+/**
+ * PERBAIKAN FLOW NAVIGASI:
+ * 1. Jika berasal dari 'detail', kembali ke detail.php?id=...
+ * 2. Jika Admin, kembali ke sub-page dashboard admin yang sesuai.
+ * 3. Jika Penerbit, kembali ke dashboard publisher.
+ * 4. Default untuk User adalah kembali ke Detail Buku (flow paling umum).
+ */
+if ($from_page === 'detail') {
+    $back_url = "detail.php?id=$id";
+} elseif ($_SESSION['role'] == 'ADMIN') {
+    $back_url = "dashboard-admin.php" . ($from_page ? "?page=$from_page" : "");
+} elseif ($_SESSION['role'] == 'PENERBIT') {
+    $back_url = "dashboard-publisher.php";
+} else {
+    // Default untuk user biasa adalah kembali ke halaman detail buku
+    $back_url = "detail.php?id=$id";
+}
+
+// Catat Riwayat Baca (Hanya untuk User Biasa agar tidak mengotori history admin)
+if ($_SESSION['role'] == 'USER') {
+    mysqli_query($conn, "INSERT IGNORE INTO history (user_id, book_id) VALUES ($user_id, $id)");
+}
 ?>
 
 <!DOCTYPE html>
@@ -32,42 +59,58 @@ mysqli_query($conn, $insert_history);
 
 <head>
     <meta charset="UTF-8">
-    <title>Membaca: <?= htmlspecialchars($book['title']) ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Membaca: <?= htmlspecialchars($book['title']) ?> - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body,
-        html {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
 </head>
 
-<body class="flex flex-col h-screen">
-    <div class="bg-gray-900 text-white p-3 flex justify-between items-center shadow-lg z-10">
-        <div class="flex items-center gap-3">
-            <a href="detail.php?id=<?= $id ?>" class="text-gray-300 hover:text-white transition flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                </svg>
-                Kembali
-            </a>
-            <h1 class="font-semibold text-sm md:text-base truncate max-w-md"><?= htmlspecialchars($book['title']) ?></h1>
-        </div>
-        <!-- Update Label info system -->
-        <div class="text-xs text-gray-400 hidden sm:block">Mode File System Storage</div>
-    </div>
+<body class="bg-gray-900 h-screen flex flex-col overflow-hidden">
 
-    <div class="flex-1 bg-gray-100 relative">
-        <iframe src="stream_file.php?id=<?= $id ?>#toolbar=0&view=FitH"></iframe>
-    </div>
+    <!-- Top Navigation -->
+    <header class="bg-gray-800 text-white p-4 flex justify-between items-center border-b border-gray-700 z-10">
+        <div class="flex items-center gap-4">
+            <a href="<?= $back_url ?>" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition font-bold text-sm">
+                <span>⬅️</span> Kembali
+            </a>
+            <div class="hidden md:block">
+                <h1 class="text-sm font-bold truncate max-w-md"><?= htmlspecialchars($book['title']) ?></h1>
+                <p class="text-[10px] text-gray-400">Mode Membaca Digital</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded"><?= $book['type'] ?></span>
+        </div>
+    </header>
+
+    <!-- Reader Container -->
+    <main class="flex-1 bg-gray-500 relative">
+        <?php if (!empty($book['file_path'])): ?>
+            <!-- Viewer PDF menggunakan stream_file.php agar file di folder uploads terlindungi -->
+            <iframe
+                src="stream_file.php?id=<?= $id ?>"
+                class="w-full h-full border-none"
+                title="PDF Viewer"></iframe>
+        <?php elseif (!empty($book['link'])): ?>
+            <!-- Jika berupa link eksternal -->
+            <div class="flex flex-col items-center justify-center h-full text-white bg-gray-800 p-8 text-center">
+                <div class="text-5xl mb-4">🔗</div>
+                <h2 class="text-xl font-bold mb-2">Buku ini tersedia di platform eksternal</h2>
+                <p class="text-gray-400 mb-6 max-w-sm">Klik tombol di bawah untuk membuka sumber asli buku ini.</p>
+                <a href="<?= htmlspecialchars($book['link']) ?>" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition">Buka Tautan Eksternal</a>
+            </div>
+        <?php else: ?>
+            <div class="flex items-center justify-center h-full text-white">
+                <p>File tidak tersedia atau sedang bermasalah.</p>
+            </div>
+        <?php endif; ?>
+    </main>
+
+    <!-- Footer Status -->
+    <footer class="bg-gray-800 p-2 text-center text-[10px] text-gray-500">
+        © <?= date('Y') ?> E-Library Digital System - Menjaga Privasi & Keamanan Konten
+    </footer>
+
 </body>
 
 </html>
