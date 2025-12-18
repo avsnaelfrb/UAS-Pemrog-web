@@ -73,6 +73,7 @@ if (!$my_books) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terbitan Saya - Publisher</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
@@ -83,8 +84,8 @@ if (!$my_books) {
 <body class="bg-gray-50 font-sans text-gray-800">
 
     <?php if ($message): ?>
-        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
-            ✅ <?= $message ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-5 h-5"></i> <?= $message ?>
         </div>
     <?php endif; ?>
 
@@ -93,23 +94,37 @@ if (!$my_books) {
         <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
             <div class="p-6 border-b flex flex-col items-center relative">
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-2xl mb-3">✒️</div>
+                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-2xl mb-3">
+                    <i data-lucide="pen-tool" class="w-8 h-8 text-purple-600"></i>
+                </div>
                 <h1 class="text-xl font-bold text-purple-900">Publisher</h1>
                 <p class="text-xs text-gray-500 mt-1">Halo, <?= htmlspecialchars($_SESSION['name'] ?? 'User') ?></p>
             </div>
 
             <nav class="p-4 space-y-2">
-                <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>📚</span> Katalog</a>
-                <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm"><span>📂</span> Terbitan Saya</a>
-                <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>📤</span> Upload Karya</a>
-                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>🕒</span> Riwayat</a>
-                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>🔖</span> Koleksi</a>
-                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200"><span>⚙️</span> Profile</a>
-                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t"><span>🚪</span> Keluar</a>
+                <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <i data-lucide="library" class="w-5 h-5"></i> Katalog
+                </a>
+                <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm">
+                    <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
+                </a>
+                <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
+                </a>
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <i data-lucide="history" class="w-5 h-5"></i> Riwayat
+                </a>
+                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
+                </a>
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                    <i data-lucide="settings" class="w-5 h-5"></i> Profile
+                </a>
+                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
+                </a>
             </nav>
         </aside>
 
@@ -117,20 +132,22 @@ if (!$my_books) {
         <main class="flex-1 lg:ml-64 p-8 transition-all duration-300">
             <!-- Header Mobile -->
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
-                <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                    </svg></button>
+                <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
                 <h1 class="font-bold text-purple-900 text-lg">Terbitan Saya</h1>
             </div>
 
             <div class="max-w-6xl mx-auto">
                 <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-1">📂 Manajemen Publikasi</h2>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                            <i data-lucide="folder-open" class="w-6 h-6"></i> Manajemen Publikasi
+                        </h2>
                         <p class="text-gray-500 text-sm">Kelola status dan data buku yang telah Anda unggah.</p>
                     </div>
-                    <a href="upload.php" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 transition shadow">
-                        + Upload Baru
+                    <a href="upload.php" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 transition shadow flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Upload Baru
                     </a>
                 </div>
 
@@ -159,7 +176,10 @@ if (!$my_books) {
                                                         ?>
                                                             <img src="<?= $coverPathMb ?>" class="w-full h-full object-cover">
                                                         <?php else: ?>
-                                                            <div class="flex items-center justify-center h-full text-[10px] text-gray-400">No Img</div>
+                                                            <div class="flex items-center justify-center h-full text-[10px] text-gray-400 flex-col">
+                                                                <i data-lucide="image-off" class="w-4 h-4 mb-1"></i>
+                                                                No Img
+                                                            </div>
                                                         <?php endif; ?>
                                                     </div>
                                                     <div>
@@ -185,13 +205,19 @@ if (!$my_books) {
                                             </td>
                                             <td class="p-4 align-top text-right space-y-2">
                                                 <!-- TOMBOL LIHAT -->
-                                                <a href="detail.php?id=<?= $mb['id'] ?>" class="text-purple-600 font-bold text-xs hover:underline mr-3">Lihat</a>
+                                                <a href="detail.php?id=<?= $mb['id'] ?>" class="text-purple-600 font-bold text-xs hover:underline mr-3 inline-flex items-center gap-1">
+                                                    <i data-lucide="eye" class="w-3 h-3"></i> Lihat
+                                                </a>
 
                                                 <!-- TOMBOL EDIT (Ke Halaman Baru) -->
-                                                <a href="edit_book.php?id=<?= $mb['id'] ?>" class="text-blue-600 font-bold text-xs hover:underline mr-3">Edit</a>
+                                                <a href="edit_book.php?id=<?= $mb['id'] ?>" class="text-blue-600 font-bold text-xs hover:underline mr-3 inline-flex items-center gap-1">
+                                                    <i data-lucide="edit" class="w-3 h-3"></i> Edit
+                                                </a>
 
                                                 <!-- TOMBOL HAPUS -->
-                                                <a href="?delete=<?= $mb['id'] ?>" onclick="return confirm('Yakin ingin menghapus publikasi ini secara permanen?')" class="text-red-500 font-bold text-xs hover:underline">Hapus</a>
+                                                <a href="?delete=<?= $mb['id'] ?>" onclick="return confirm('Yakin ingin menghapus publikasi ini secara permanen?')" class="text-red-500 font-bold text-xs hover:underline inline-flex items-center gap-1">
+                                                    <i data-lucide="trash-2" class="w-3 h-3"></i> Hapus
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>
@@ -201,11 +227,13 @@ if (!$my_books) {
                     </div>
                 <?php else: ?>
                     <div class="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300 text-center">
-                        <div class="text-4xl mb-4">📂</div>
+                        <div class="text-gray-400 mb-4">
+                            <i data-lucide="folder-open" class="w-12 h-12"></i>
+                        </div>
                         <h3 class="text-lg font-medium text-gray-900">Belum ada publikasi</h3>
                         <p class="text-gray-500 text-sm mb-4">Mulai kontribusi Anda dengan mengunggah karya tulis.</p>
-                        <a href="upload.php" class="px-6 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition">
-                            Upload Sekarang
+                        <a href="upload.php" class="px-6 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 transition inline-flex items-center gap-2">
+                            <i data-lucide="upload" class="w-4 h-4"></i> Upload Sekarang
                         </a>
                     </div>
                 <?php endif; ?>
@@ -225,6 +253,9 @@ if (!$my_books) {
                 overlay.classList.add('hidden');
             }
         }
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
     </script>
 </body>
 
