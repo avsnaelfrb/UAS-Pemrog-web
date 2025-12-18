@@ -6,20 +6,20 @@
     },
     "routes": [
       {
-        "src": "/",
-        "dest": "/api/index.php"
+        "src": "/Backend/(.*)\\.php",
+        "dest": "/api/Backend/$1.php"
       },
       {
-        "src": "/Frontend/(.*)",
-        "dest": "/api/Frontend/$1"
-      },
-      {
-        "src": "/Backend/(.*)",
-        "dest": "/api/Backend/$1"
+        "src": "/Frontend/(.*)\\.php",
+        "dest": "/api/Frontend/$1.php"
       },
       {
         "src": "/uploads/(.*)",
         "dest": "/api/uploads/$1"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/api/index.php"
       }
     ]
   }
