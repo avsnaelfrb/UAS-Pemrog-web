@@ -1,37 +1,37 @@
 <?php
 
 /**
- * KONFIGURASI DATABASE CLOUD (TiDB Cloud dengan SSL)
+ * KONFIGURASI DATABASE RAILWAY
  */
-mysqli_report(MYSQLI_REPORT_OFF);
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+// Mengambil environment variables dari Vercel
 $host = getenv('DB_HOST') ?: "localhost";
 $user = getenv('DB_USER') ?: "root";
 $pass = getenv('DB_PASSWORD') ?: "";
 $db   = getenv('DB_NAME') ?: "elibrary_db";
-$port = getenv('DB_PORT') ?: 3306;
+$port = (int)(getenv('DB_PORT') ?: 3306);
 
-$conn = mysqli_init();
-
-$success = mysqli_real_connect($conn, $host, $user, $pass, $db, $port);
-
-if (!$success) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+try {
+    // Koneksi lebih simpel tanpa SSL TiDB
+    $conn = mysqli_connect($host, $user, $pass, $db, $port);
+    mysqli_query($conn, "SET SESSION sql_mode = ''");
+} catch (Exception $e) {
+    die("Koneksi database gagal. Silakan cek Environment Variables Anda.");
 }
 
+// Session management
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-mysqli_query($conn, "SET SESSION sql_mode = ''");
-
+// Base URL detection
 $base_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
 
 /**
- * FUNGSI HELPER (Tetap Sama)
+ * FUNGSI HELPER
  */
+
 function redirect($url)
 {
     echo "<script>window.location.href='$url';</script>";
@@ -46,28 +46,22 @@ function uploadFile($file, $destination)
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $fileName = time() . '_' . rand(100, 999) . '.' . $ext;
     $fileName = preg_replace("/[^a-zA-Z0-9._-]/", "", $fileName);
-    $target = $destination . '/' . $fileName;
+    $target = $destination . DIRECTORY_SEPARATOR . $fileName;
 
-    if (move_uploaded_file($file['tmp_name'], $target)) return $fileName;
-    return false;
+    return move_uploaded_file($file['tmp_name'], $target) ? $fileName : false;
 }
 
 function deleteFile($filePath)
 {
-    if (file_exists($filePath)) return unlink($filePath);
-    return false;
+    return file_exists($filePath) ? unlink($filePath) : false;
 }
 
 function getStatusBadge($status)
 {
-    switch ($status) {
-        case 'APPROVED':
-            return '<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Terbit</span>';
-        case 'PENDING':
-            return '<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Menunggu</span>';
-        case 'REJECTED':
-            return '<span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">Ditolak</span>';
-        default:
-            return '';
-    }
+    $badges = [
+        'APPROVED' => '<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Terbit</span>',
+        'PENDING'  => '<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Menunggu</span>',
+        'REJECTED' => '<span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">Ditolak</span>'
+    ];
+    return $badges[$status] ?? '';
 }
