@@ -1,19 +1,34 @@
 <?php
 
+/**
+ * KONFIGURASI DATABASE & SESSION - RAILWAY URL VERSION
+ */
 
+// Memulai session secara standar
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-$host = getenv('DB_HOST') ?: "localhost";
-$user = getenv('DB_USER') ?: "root";
-$pass = getenv('DB_PASSWORD') ?: "";
-$db   = getenv('DB_NAME') ?: "elibrary_db";
-$port = (int)(getenv('DB_PORT') ?: 3306);
+/**
+ * PENGATURAN DATABASE MENGGUNAKAN CONNECTION STRING
+ */
+// Railway biasanya menyediakan variabel 'DATABASE_URL'. 
+// Jika tidak ada, kita pakai link yang Anda berikan sebagai default.
+$db_url = getenv('DATABASE_URL') ?: "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
+
+// Bedah URL untuk mendapatkan komponen database
+$db_parts = parse_url($db_url);
+
+$host = $db_parts['host'];
+$user = $db_parts['user'];
+$pass = $db_parts['pass'];
+$db   = ltrim($db_parts['path'], '/');
+$port = $db_parts['port'];
 
 try {
+    // Koneksi menggunakan data hasil bedah URL
     $conn = mysqli_connect($host, $user, $pass, $db, $port);
     mysqli_query($conn, "SET SESSION sql_mode = ''");
     mysqli_query($conn, "SET time_zone = '+07:00'");
