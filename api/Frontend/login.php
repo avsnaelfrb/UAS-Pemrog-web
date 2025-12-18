@@ -25,7 +25,7 @@ if (isset($_POST['login'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = strtoupper($user['role']);
-
+            session_write_close();
             // Redirect berdasarkan role yang sudah dinormalisasi
             if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
             else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
