@@ -38,11 +38,12 @@ if (!empty($filter_genres)) {
 $sql .= " GROUP BY b.id ORDER BY b.created_at DESC";
 $books = mysqli_query($conn, $sql);
 
+// Updated Type Map with Lucide Icons
 $type_map = [
-    '' => '📄 Semua Tipe',
-    'BOOK' => '📘 Buku',
-    'JOURNAL' => '📓 Jurnal',
-    'ARTICLE' => '📰 Artikel'
+    '' => '<div class="flex items-center gap-2"><i data-lucide="files" class="w-4 h-4"></i> Semua Tipe</div>',
+    'BOOK' => '<div class="flex items-center gap-2"><i data-lucide="book" class="w-4 h-4"></i> Buku</div>',
+    'JOURNAL' => '<div class="flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4"></i> Jurnal</div>',
+    'ARTICLE' => '<div class="flex items-center gap-2"><i data-lucide="newspaper" class="w-4 h-4"></i> Artikel</div>'
 ];
 $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : $type_map[''];
 ?>
@@ -55,6 +56,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Penerbit - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .genre-scroll::-webkit-scrollbar {
             width: 6px;
@@ -82,11 +84,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
         <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
             <div class="p-6 border-b flex flex-col items-center relative">
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-2xl mb-3">✒️</div>
+                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-2xl mb-3">
+                    <i data-lucide="pen-tool" class="w-8 h-8 text-purple-600"></i>
+                </div>
                 <h1 class="text-xl font-bold text-purple-900">Publisher</h1>
                 <p class="text-xs text-gray-500 mt-1">Halo, <?= htmlspecialchars($_SESSION['name']) ?></p>
             </div>
@@ -94,31 +96,31 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             <nav class="p-4 space-y-2">
                 <!-- Menu Aktif -->
                 <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm">
-                    <span>📚</span> Katalog
+                    <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
 
                 <!-- Menu Terbitan Saya Baru -->
                 <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>📂</span> Terbitan Saya
+                    <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
                 </a>
 
                 <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>📤</span> Upload Karya
+                    <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
                 </a>
 
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>🕒</span> Riwayat
+                    <i data-lucide="history" class="w-5 h-5"></i> Riwayat
                 </a>
 
                 <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>🔖</span> Koleksi
+                    <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
                 </a>
 
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                    <span>⚙️</span> Profile
+                    <i data-lucide="settings" class="w-5 h-5"></i> Profile
                 </a>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
-                    <span>🚪</span> Keluar
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
                 </a>
             </nav>
         </aside>
@@ -128,12 +130,12 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             <!-- Header Mobile -->
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                    </svg>
+                    <i data-lucide="menu" class="w-6 h-6"></i>
                 </button>
                 <h1 class="font-bold text-purple-900 text-lg">Dashboard</h1>
-                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm border border-purple-200">✒️</div>
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm border border-purple-200">
+                    <i data-lucide="pen-tool" class="w-4 h-4 text-purple-600"></i>
+                </div>
             </div>
 
             <!-- Banner Statistik Singkat Penerbit -->
@@ -142,16 +144,14 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <h2 class="text-2xl font-bold">Selamat Datang, Kontributor!</h2>
                     <p class="text-purple-200 text-sm">Bagikan pengetahuanmu melalui karya tulis.</p>
                 </div>
-                <a href="upload.php" class="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-purple-50 hover:scale-105 transition transform shadow w-full md:w-auto text-center">
-                    + Upload Baru
+                <a href="upload.php" class="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-purple-50 hover:scale-105 transition transform shadow w-full md:w-auto text-center flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Upload Baru
                 </a>
             </div>
 
-            <!-- Section 1 Dihapus karena sudah ada di menu Terbitan Saya -->
-
             <!-- Section 2: Katalog Umum -->
             <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <span>📚</span> Katalog Perpustakaan
+                <i data-lucide="library" class="w-5 h-5"></i> Katalog Perpustakaan
             </h3>
 
             <!-- SEARCH & FILTER BAR (ADAPTASI UNGU) -->
@@ -160,16 +160,22 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <!-- Search Input -->
                     <div class="flex-1 relative">
                         <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari judul atau penulis..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition h-full">
-                        <span class="absolute left-3 top-3.5 text-gray-400">🔍</span>
+                        <span class="absolute left-3 top-3.5 text-gray-400">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </span>
                     </div>
 
                     <!-- DROPDOWN GENRE (Multi-Select Purple Style) -->
                     <div class="relative min-w-[220px]" id="genreDropdownContainer">
                         <button type="button" onclick="toggleGenreDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-left flex justify-between items-center text-gray-700 transition hover:bg-purple-50">
-                            <span id="genreLabel" class="truncate mr-2">
-                                <?= empty($filter_genres) ? '📂 Pilih Genre' : count($filter_genres) . ' Genre Dipilih' ?>
+                            <span id="genreLabel" class="truncate mr-2 flex items-center gap-2">
+                                <?php if (empty($filter_genres)): ?>
+                                    <div class="flex items-center gap-2"><i data-lucide="folder" class="w-4 h-4"></i> Pilih Genre</div>
+                                <?php else: ?>
+                                    <?= count($filter_genres) . ' Genre Dipilih' ?>
+                                <?php endif; ?>
                             </span>
-                            <span class="text-gray-400 text-xs transform transition-transform duration-200" id="genreArrow">▼</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-200" id="genreArrow"></i>
                         </button>
 
                         <div id="genrePanel" class="hidden absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-2 max-h-60 overflow-y-auto genre-scroll">
@@ -192,19 +198,21 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                         <input type="hidden" name="type" id="typeInput" value="<?= htmlspecialchars($filter_type) ?>">
 
                         <button type="button" onclick="toggleTypeDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-left flex justify-between items-center text-gray-700 transition hover:bg-purple-50">
-                            <span id="typeLabel" class="truncate mr-2"><?= $active_type_label ?></span>
-                            <span class="text-gray-400 text-xs transform transition-transform duration-200" id="typeArrow">▼</span>
+                            <span id="typeLabel" class="truncate mr-2 flex items-center gap-2">
+                                <?= $active_type_label ?>
+                            </span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-200" id="typeArrow"></i>
                         </button>
 
                         <div id="typePanel" class="hidden absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
                             <?php foreach ($type_map as $val => $label):
                                 $isSelected = ($filter_type == $val);
                             ?>
-                                <div onclick="selectType('<?= $val ?>', '<?= $label ?>')"
+                                <div onclick="selectType('<?= $val ?>', '<?= htmlspecialchars($label) ?>')"
                                     class="px-4 py-2.5 hover:bg-purple-50 cursor-pointer text-sm flex items-center justify-between group transition <?= $isSelected ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-700' ?>">
                                     <span><?= $label ?></span>
                                     <?php if ($isSelected): ?>
-                                        <span class="text-purple-600">✓</span>
+                                        <i data-lucide="check" class="w-4 h-4 text-purple-600"></i>
                                     <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
@@ -223,7 +231,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
                         <?php if ($search): ?>
                             <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full border border-yellow-200 text-xs flex items-center gap-1">
-                                🔍 "<?= htmlspecialchars($search) ?>"
+                                <i data-lucide="search" class="w-3 h-3"></i> "<?= htmlspecialchars($search) ?>"
                             </span>
                         <?php endif; ?>
 
@@ -232,7 +240,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                             mysqli_data_seek($genres_list, 0);
                             while ($gx = mysqli_fetch_assoc($genres_list)) {
                                 if (in_array($gx['id'], $filter_genres)) {
-                                    echo '<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 text-xs flex items-center gap-1">📂 ' . htmlspecialchars($gx['name']) . '</span>';
+                                    echo '<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 text-xs flex items-center gap-1"><i data-lucide="folder" class="w-3 h-3"></i> ' . htmlspecialchars($gx['name']) . '</span>';
                                 }
                             }
                             ?>
@@ -265,7 +273,8 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                                 <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                             <?php else: ?>
                                 <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                                    <span class="text-4xl mb-2">📚</span><span class="text-xs">No Cover</span>
+                                    <i data-lucide="image-off" class="w-10 h-10 mb-2"></i>
+                                    <span class="text-xs">No Cover</span>
                                 </div>
                             <?php endif; ?>
 
@@ -369,7 +378,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
         function selectType(value, label) {
             document.getElementById('typeInput').value = value;
-            document.getElementById('typeLabel').innerText = label;
+            document.getElementById('typeLabel').innerHTML = label; // Use innerHTML to render icons
             closeTypeDropdown();
         }
 
@@ -380,6 +389,9 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             const typeContainer = document.getElementById('typeDropdownContainer');
             if (!typeContainer.contains(event.target)) closeTypeDropdown();
         });
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
     </script>
 </body>
 
