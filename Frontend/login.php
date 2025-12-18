@@ -1,9 +1,9 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
 
-// Jika sudah login, lempar ke dashboard yang sesuai
-if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
-    $role = strtoupper($_SESSION['role']);
+// Jika sudah ada session, langsung ke dashboard
+if (isset($_SESSION['user_id'])) {
+    $role = $_SESSION['role'];
     if ($role == 'ADMIN') redirect('dashboard-admin.php');
     else if ($role == 'PENERBIT') redirect('dashboard-publisher.php');
     else redirect('dashboard-user.php');
@@ -21,12 +21,12 @@ if (isset($_POST['login'])) {
     if (mysqli_num_rows($result) > 0) {
         $user = mysqli_fetch_assoc($result);
         if (password_verify($password, $user['password'])) {
-            // Set session dengan normalisasi role ke UPPERCASE
+            // Set Session Standar
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = strtoupper($user['role']);
-            session_write_close();
-            // Redirect berdasarkan role yang sudah dinormalisasi
+
+            // Redirect sesuai role
             if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
             else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
             else redirect('dashboard-user.php');
@@ -38,7 +38,6 @@ if (isset($_POST['login'])) {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 
@@ -49,41 +48,33 @@ if (isset($_POST['login'])) {
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center px-4">
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-900 rounded-full mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-            </div>
-            <h2 class="text-3xl font-bold text-gray-800">E-Library</h2>
-            <p class="text-gray-500 mt-2">Masuk ke akun Anda</p>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-bold text-blue-900">E-Library</h2>
+            <p class="text-gray-500">Silakan masuk ke akun Anda</p>
         </div>
 
         <?php if ($error): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm">
-                <?php echo $error; ?>
+            <div class="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm border border-red-200">
+                ⚠️ <?= $error ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input type="email" name="email" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none" placeholder="nama@email.com">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" name="email" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input type="password" name="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none" placeholder="••••••••">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
-            <button type="submit" name="login" class="w-full py-3 px-4 bg-blue-900 hover:bg-blue-800 text-white font-medium rounded-lg transition duration-200">
-                Masuk
-            </button>
+            <button type="submit" name="login" class="w-full bg-blue-900 text-white py-2 rounded-lg font-bold hover:bg-blue-800 transition">Masuk</button>
         </form>
-
-        <div class="mt-6 text-center">
-            <a href="register.php" class="text-blue-900 hover:text-blue-800 font-medium text-sm">Belum punya akun? Daftar</a>
-        </div>
+        <p class="mt-6 text-center text-sm text-gray-600">
+            Belum punya akun? <a href="register.php" class="text-blue-700 font-bold">Daftar</a>
+        </p>
     </div>
 </body>
 
