@@ -1,7 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
+checkRole('ADMIN');
 
-// Cek Sesi & Role
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
     header("Location: login.php");
     exit;
@@ -11,7 +11,6 @@ $message = '';
 $error_msg = '';
 $active_page = isset($_GET['page']) ? $_GET['page'] : 'books';
 
-// --- LOGIKA MODERASI BUKU (Hapus Konten Tidak Pantas) ---
 if (isset($_GET['delete_book'])) {
     $id = (int)$_GET['delete_book'];
 
@@ -36,7 +35,6 @@ if (isset($_GET['delete_book'])) {
     }
 }
 
-// --- LOGIKA APPROVAL PENERBIT ---
 if (isset($_GET['approve_publisher'])) {
     $uid = (int)$_GET['approve_publisher'];
     mysqli_query($conn, "UPDATE users SET role='PENERBIT', request_penerbit='0' WHERE id=$uid");
@@ -48,7 +46,6 @@ if (isset($_GET['reject_publisher'])) {
     $message = "Permintaan menjadi penerbit ditolak.";
 }
 
-// --- LOGIKA APPROVAL BUKU (Pending -> Approved) ---
 if (isset($_GET['approve_book'])) {
     $bid = (int)$_GET['approve_book'];
     mysqli_query($conn, "UPDATE books SET status='APPROVED' WHERE id=$bid");
@@ -60,7 +57,6 @@ if (isset($_GET['reject_book'])) {
     $message = "Buku ditolak.";
 }
 
-// --- LOGIKA HAPUS USER ---
 if (isset($_GET['delete_user'])) {
     $uid = (int)$_GET['delete_user'];
     if ($uid == $_SESSION['user_id']) {
@@ -72,7 +68,6 @@ if (isset($_GET['delete_user'])) {
     }
 }
 
-// --- LOGIKA CRUD GENRE ---
 if (isset($_POST['save_genre'])) {
     $name = mysqli_real_escape_string($conn, $_POST['genre_name']);
     if (!empty($name)) {

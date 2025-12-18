@@ -1,15 +1,22 @@
 <?php
 
 /**
- * KONFIGURASI DATABASE RAILWAY - FIXED VERSION
+ * KONFIGURASI DATABASE & SESSION - FIXED FOR VERCEL & LOCAL
+ * Menyertakan kembali fungsi uploadFile dan logic orisinal project.
  */
 
-// Memulai output buffering untuk mencegah error "headers already sent"
 ob_start();
+
+ini_set('session.cookie_path', '/');
+ini_set('session.gc_maxlifetime', 3600);
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Mengambil environment variables dari Railway/Vercel
+// Konfigurasi Database (Mendukung Environment Variables Railway)
 $host = getenv('DB_HOST') ?: "localhost";
 $user = getenv('DB_USER') ?: "root";
 $pass = getenv('DB_PASSWORD') ?: "";
@@ -18,25 +25,20 @@ $port = (int)(getenv('DB_PORT') ?: 3306);
 
 try {
     $conn = mysqli_connect($host, $user, $pass, $db, $port);
-    // Menonaktifkan strict mode untuk kompatibilitas cloud
+    // Menonaktifkan strict mode untuk menghindari error SQL di beberapa server cloud
     mysqli_query($conn, "SET SESSION sql_mode = ''");
 } catch (Exception $e) {
-    die("Koneksi database gagal. Silakan cek Environment Variables Anda.");
-}
-
-// Session management yang lebih aman
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    die("Koneksi database gagal. Periksa Environment Variables Anda.");
 }
 
 /**
- * FUNGSI HELPER
+ * FUNGSI HELPER & LOGIC PROJECT
  */
 
-// Perbaikan fungsi redirect menggunakan Header (Standar PHP)
 function redirect($url)
 {
     header("Location: $url");
+    ob_end_flush();
     exit();
 }
 
@@ -55,12 +57,33 @@ function uploadFile($file, $destination)
 
 function deleteFile($filePath)
 {
-    return file_exists($filePath) ? unlink($filePath) : false;
+    if (file_exists($filePath)) {
+        return unlink($filePath);
+    }
+    return false;
+}
+
+function checkRole($expectedRole)
+{
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
+        header("Location: login.php");
+        exit();
+    }
+
+    $currentRole = strtoupper(trim($_SESSION['role']));
+    $expectedRole = strtoupper(trim($expectedRole));
+
+    if ($currentRole !== $expectedRole) {
+        if ($currentRole === 'ADMIN') header("Location: dashboard-admin.php");
+        else if ($currentRole === 'PENERBIT') header("Location: dashboard-publisher.php");
+        else header("Location: dashboard-user.php");
+        exit();
+    }
 }
 
 function getStatusBadge($status)
 {
-    $status = strtoupper($status);
+    $status = strtoupper(trim($status));
     $badges = [
         'APPROVED' => '<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Terbit</span>',
         'PENDING'  => '<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Menunggu</span>',

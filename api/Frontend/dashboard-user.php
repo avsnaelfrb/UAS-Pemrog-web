@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
+checkRole('USER');
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");

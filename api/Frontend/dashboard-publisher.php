@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
+checkRole('PENERBIT');
 
 // CEK KHUSUS: Hanya Penerbit
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'PENERBIT') {
