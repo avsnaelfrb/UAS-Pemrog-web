@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require './api/Backend/config.php';
 
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');

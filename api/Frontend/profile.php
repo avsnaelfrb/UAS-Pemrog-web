@@ -1,5 +1,5 @@
 <?php
-require '../Backend/config.php';
+require './api/Backend/config.php';
 
 // Cek Login
 if (!isset($_SESSION['user_id'])) {
