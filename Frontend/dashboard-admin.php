@@ -93,6 +93,53 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'deleted') $message = "Data berhasil 
 $notif_req_penerbit = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM users WHERE request_penerbit='1'"));
 $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHERE status='PENDING'"));
 
+// Helper Function for Time Ago (Agar bisa dipakai di berbagai case)
+if (!function_exists('time_elapsed_string')) {
+    function time_elapsed_string($datetime, $full = false)
+    {
+        $tz = new DateTimeZone('Asia/Jakarta');
+        $now = new DateTime('now', $tz);
+        $ago = new DateTime($datetime, $tz);
+        $diff = $now->diff($ago);
+
+        if ($ago > $now) return 'Baru saja';
+
+        $weeks = floor($diff->d / 7);
+        $days = $diff->d - ($weeks * 7);
+
+        $string = array(
+            'y' => 'tahun',
+            'm' => 'bulan',
+            'w' => 'minggu',
+            'd' => 'hari',
+            'h' => 'jam',
+            'i' => 'menit',
+            's' => 'detik',
+        );
+
+        $values = [
+            'y' => $diff->y,
+            'm' => $diff->m,
+            'w' => $weeks,
+            'd' => $days,
+            'h' => $diff->h,
+            'i' => $diff->i,
+            's' => $diff->s,
+        ];
+
+        foreach ($string as $k => &$v) {
+            if ($values[$k]) {
+                $v = $values[$k] . ' ' . $v;
+            } else {
+                unset($string[$k]);
+            }
+        }
+
+        if (!$full) $string = array_slice($string, 0, 1);
+        return $string ? implode(', ', $string) . ' yang lalu' : 'Baru saja';
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -107,6 +154,13 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
         .active-nav {
             background-color: #eff6ff;
             color: #1e40af;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -240,8 +294,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                 <?php
                     // === HALAMAN GENRE (IMPROVED) ===
                 case 'genres':
-                    // Query untuk mengambil Genre + Jumlah Bukunya
-                    // Menggunakan LEFT JOIN agar genre yang belum ada bukunya tetap muncul (count = 0)
                     $q_genre = "
                         SELECT g.id, g.name, COUNT(bg.book_id) as total_books
                         FROM genres g
@@ -250,11 +302,7 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                         ORDER BY g.name ASC
                     ";
                     $genres = mysqli_query($conn, $q_genre);
-
-                    // Hitung total genre
                     $total_genres = mysqli_num_rows($genres);
-
-                    // Reset pointer agar bisa diloop ulang di tabel
                     mysqli_data_seek($genres, 0);
                 ?>
                     <div class="flex justify-between items-end mb-8">
@@ -262,8 +310,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                             <h2 class="text-2xl font-bold text-gray-800">📂 Kelola Kategori Genre</h2>
                             <p class="text-gray-500 text-sm mt-1">Atur kategori buku agar katalog lebih terstruktur.</p>
                         </div>
-
-                        <!-- Statistik Ringkas -->
                         <div class="flex gap-4">
                             <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100 flex items-center gap-3">
                                 <div class="bg-blue-50 text-blue-600 p-2 rounded-md">
@@ -280,7 +326,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                        <!-- Form Tambah Genre -->
                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-4">
                             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
                                 <span class="bg-green-100 text-green-600 w-8 h-8 flex items-center justify-center rounded-lg text-sm">➕</span>
@@ -296,12 +341,8 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                                     <span>Simpan Genre</span>
                                 </button>
                             </form>
-                            <p class="text-xs text-gray-400 mt-4 leading-relaxed text-center">
-                                Tips: Gunakan nama kategori yang umum agar mudah dicari oleh pengguna.
-                            </p>
                         </div>
 
-                        <!-- Tabel Daftar Genre -->
                         <div class="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                             <div class="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                 <h4 class="font-bold text-gray-700">Daftar Genre Tersedia</h4>
@@ -325,30 +366,15 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                                                     </div>
                                                 </td>
                                                 <td class="p-5 text-center">
-                                                    <?php if ($g['total_books'] > 0): ?>
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                            <?= $g['total_books'] ?> Buku
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-400">
-                                                            Kosong
-                                                        </span>
-                                                    <?php endif; ?>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?= $g['total_books'] > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-400' ?>">
+                                                        <?= $g['total_books'] ?> Buku
+                                                    </span>
                                                 </td>
                                                 <td class="p-5 text-right">
-                                                    <a href="?page=genres&delete_genre=<?= $g['id'] ?>" onclick="return confirm('Yakin hapus genre \'<?= $g['name'] ?>\'? \nPERINGATAN: Pastikan tidak ada buku penting yang hanya memiliki genre ini.')"
-                                                        class="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors inline-block" title="Hapus Genre">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                        </svg>
-                                                    </a>
+                                                    <a href="?page=genres&delete_genre=<?= $g['id'] ?>" onclick="return confirm('Yakin hapus genre?')" class="text-gray-400 hover:text-red-600 transition-colors">🗑️</a>
                                                 </td>
                                             </tr>
                                         <?php endwhile; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="3" class="p-10 text-center text-gray-400 italic">Belum ada genre yang ditambahkan.</td>
-                                        </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -357,38 +383,111 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                     <?php break; ?>
 
                 <?php
-                    // === HALAMAN VALIDASI BUKU ===
+                    // === HALAMAN VALIDASI BUKU (MODERN IMPROVEMENT) ===
                 case 'validation_books':
-                    $req_books = mysqli_query($conn, "SELECT b.*, u.name as publisher_name FROM books b JOIN users u ON b.uploaded_by = u.id WHERE b.status='PENDING'");
+                    $req_books = mysqli_query($conn, "SELECT b.*, u.name as publisher_name, u.email as publisher_email FROM books b JOIN users u ON b.uploaded_by = u.id WHERE b.status='PENDING' ORDER BY b.created_at DESC");
                 ?>
-                    <h2 class="text-2xl font-bold mb-6">Validasi Buku Masuk (Pending)</h2>
-                    <?php if (mysqli_num_rows($req_books) == 0): ?><p class="text-gray-500">Tidak ada buku menunggu review.</p><?php else: ?>
-                        <div class="grid gap-4">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">📖 Antrean Validasi Buku</h2>
+                            <p class="text-gray-500 text-sm mt-1">Review kiriman buku dari para penerbit sebelum diterbitkan secara luas.</p>
+                        </div>
+                        <div class="bg-orange-50 text-orange-700 px-4 py-2 rounded-lg text-sm font-bold border border-orange-100 flex items-center gap-2">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                            </span>
+                            <?= mysqli_num_rows($req_books) ?> Menunggu Review
+                        </div>
+                    </div>
+
+                    <?php if (mysqli_num_rows($req_books) == 0): ?>
+                        <div class="bg-white p-20 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="text-5xl mb-4">✨</div>
+                            <h3 class="text-lg font-bold text-gray-800">Semua Beres!</h3>
+                            <p class="text-gray-500 max-w-xs mx-auto">Tidak ada buku baru dalam antrean validasi saat ini.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <?php while ($b = mysqli_fetch_assoc($req_books)): ?>
-                                <div class="bg-white p-4 rounded-xl shadow border flex gap-4 items-start">
-                                    <?php
-                                                                                                                                    $coverPath = '../uploads/covers/' . $b['cover'];
-                                                                                                                                    if (!empty($b['cover']) && file_exists($coverPath)):
-                                    ?>
-                                        <img src="<?= $coverPath ?>" class="w-20 h-28 object-cover rounded">
-                                    <?php endif; ?>
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all duration-300 group overflow-hidden flex flex-col md:flex-row">
+                                    <!-- Cover Section -->
+                                    <div class="w-full md:w-44 h-64 md:h-auto bg-gray-100 relative overflow-hidden flex-shrink-0">
+                                        <?php
+                                        $coverPath = '../uploads/covers/' . $b['cover'];
+                                        if (!empty($b['cover']) && file_exists($coverPath)):
+                                        ?>
+                                            <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                        <?php else: ?>
+                                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 p-4">
+                                                <span class="text-3xl mb-2">🖼️</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-widest">No Cover</span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="absolute top-3 left-3">
+                                            <?php
+                                            $typeColor = match ($b['type']) {
+                                                'BOOK' => 'bg-blue-600',
+                                                'JOURNAL' => 'bg-orange-500',
+                                                'ARTICLE' => 'bg-green-600',
+                                                default => 'bg-gray-600'
+                                            };
+                                            ?>
+                                            <span class="<?= $typeColor ?> text-white text-[10px] font-black px-2 py-1 rounded shadow-lg uppercase"><?= $b['type'] ?></span>
+                                        </div>
+                                    </div>
 
-                                    <div class="flex-1">
-                                        <h3 class="font-bold text-lg"><?= htmlspecialchars($b['title']) ?></h3>
-                                        <p class="text-sm text-gray-600">Oleh Penerbit: <b><?= htmlspecialchars($b['publisher_name']) ?></b></p>
-                                        <p class="text-sm text-gray-500 mt-1"><?= htmlspecialchars($b['author']) ?> • <?= $b['year'] ?> • <?= $b['type'] ?></p>
+                                    <!-- Content Section -->
+                                    <div class="p-6 flex flex-col justify-between flex-1">
+                                        <div>
+                                            <div class="flex justify-between items-start mb-2">
+                                                <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    <?= time_elapsed_string($b['created_at']) ?>
+                                                </span>
+                                            </div>
+                                            <h3 class="font-black text-xl text-gray-800 mb-1 leading-tight group-hover:text-blue-600 transition-colors line-clamp-2" title="<?= htmlspecialchars($b['title']) ?>">
+                                                <?= htmlspecialchars($b['title']) ?>
+                                            </h3>
+                                            <p class="text-sm text-gray-500 font-medium mb-4 italic">Oleh <?= htmlspecialchars($b['author']) ?> (<?= $b['year'] ?>)</p>
 
-                                        <div class="mt-4 flex gap-2">
-                                            <a href="read.php?id=<?= $b['id'] ?>" target="_blank" class="bg-gray-100 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-200">Preview PDF</a>
-                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="bg-green-600 text-white px-3 py-1.5 rounded text-sm hover:bg-green-700">Terbitkan</a>
-                                            <a href="?page=validation_books&reject_book=<?= $b['id'] ?>" class="bg-red-100 text-red-700 px-3 py-1.5 rounded text-sm hover:bg-red-200">Tolak</a>
+                                            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-6">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-xs font-bold text-blue-600 border border-blue-100 shadow-sm">
+                                                        <?= strtoupper(substr($b['publisher_name'], 0, 1)) ?>
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Pengirim</div>
+                                                        <div class="text-xs font-bold text-gray-700 truncate" title="<?= htmlspecialchars($b['publisher_email']) ?>">
+                                                            <?= htmlspecialchars($b['publisher_name']) ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="flex flex-wrap gap-2">
+                                            <a href="read.php?id=<?= $b['id'] ?>" target="_blank" class="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm">
+                                                <span>👀</span> Pratinjau
+                                            </a>
+                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-green-700 hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-green-100">
+                                                <span>✔️</span> Terbit
+                                            </a>
+                                            <a href="?page=validation_books&reject_book=<?= $b['id'] ?>" onclick="return confirm('Tolak buku ini?')" class="inline-flex items-center justify-center w-11 h-11 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 hover:text-red-700 transition-all border border-red-100">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
                             <?php endwhile; ?>
                         </div>
                     <?php endif;
-                                                                                                                            break; ?>
+                    break; ?>
 
                 <?php
                     // === HALAMAN VALIDASI USER ===
@@ -425,7 +524,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
 
                 <?php
                 case 'users':
-                    // --- HALAMAN USER LIST ---
                     $all_users = mysqli_query($conn, "SELECT * FROM users ORDER BY created_at DESC");
                 ?>
                     <div class="flex justify-between items-end mb-6">
@@ -485,19 +583,13 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                                             </td>
                                             <td class="p-5 align-middle text-right">
                                                 <?php if ($u['id'] != $_SESSION['user_id']): ?>
-                                                    <a href="?delete_user=<?= $u['id'] ?>" onclick="return confirm('Yakin hapus user ini? Tindakan ini tidak dapat dibatalkan.')" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-bold bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
+                                                    <a href="?delete_user=<?= $u['id'] ?>" onclick="return confirm('Yakin hapus user ini?')" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-bold bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
                                                         <span>🗑️</span> Hapus
                                                     </a>
-                                                <?php else: ?>
-                                                    <span class="text-gray-400 text-xs italic bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">Akun Anda</span>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="4" class="p-10 text-center text-gray-400 italic">Tidak ada user ditemukan.</td>
-                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -506,8 +598,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
 
                 <?php
                 case 'history':
-                    // --- IMPROVISASI QUERY ---
-                    // Mengambil data cover, author, type buku, dan email user
                     $query_history = "
                         SELECT h.*, 
                                u.name as user_name, u.email as user_email, u.role as user_role,
@@ -518,53 +608,6 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                         ORDER BY h.read_at DESC
                     ";
                     $histories = mysqli_query($conn, $query_history);
-
-                    // Helper function sederhana untuk 'Waktu yang lalu' (Time Ago)
-                    // Cek if function exists untuk menghindari error redeclare
-                    if (!function_exists('time_elapsed_string')) {
-                        function time_elapsed_string($datetime, $full = false)
-                        {
-                            $now = new DateTime;
-                            $ago = new DateTime($datetime);
-                            $diff = $now->diff($ago);
-
-                            // FIX: Menggunakan variabel lokal untuk minggu agar tidak error di editor
-                            $weeks = floor($diff->d / 7);
-                            $days = $diff->d - ($weeks * 7);
-
-                            $string = array(
-                                'y' => 'tahun',
-                                'm' => 'bulan',
-                                'w' => 'minggu',
-                                'd' => 'hari',
-                                'h' => 'jam',
-                                'i' => 'menit',
-                                's' => 'detik',
-                            );
-
-                            // Mapping manual value agar lebih bersih
-                            $values = [
-                                'y' => $diff->y,
-                                'm' => $diff->m,
-                                'w' => $weeks,
-                                'd' => $days,
-                                'h' => $diff->h,
-                                'i' => $diff->i,
-                                's' => $diff->s,
-                            ];
-
-                            foreach ($string as $k => &$v) {
-                                if ($values[$k]) {
-                                    $v = $values[$k] . ' ' . $v;
-                                } else {
-                                    unset($string[$k]);
-                                }
-                            }
-
-                            if (!$full) $string = array_slice($string, 0, 1);
-                            return $string ? implode(', ', $string) . ' yang lalu' : 'Baru saja';
-                        }
-                    }
                 ?>
                     <div class="flex justify-between items-end mb-6">
                         <div>
@@ -589,12 +632,10 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                             <tbody class="divide-y divide-gray-100">
                                 <?php if (mysqli_num_rows($histories) > 0): ?>
                                     <?php while ($h = mysqli_fetch_assoc($histories)):
-                                        // Initials untuk avatar
                                         $initial = strtoupper(substr($h['user_name'], 0, 1));
                                         $bg_avatar = ($h['user_role'] == 'PENERBIT') ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600';
                                     ?>
                                         <tr class="hover:bg-gray-50 transition duration-150">
-                                            <!-- KOLOM USER -->
                                             <td class="p-5 align-middle">
                                                 <div class="flex items-center gap-3">
                                                     <div class="w-10 h-10 <?= $bg_avatar ?> rounded-full flex items-center justify-center font-bold text-lg shadow-sm border border-white ring-2 ring-gray-50">
@@ -606,66 +647,33 @@ $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHER
                                                     </div>
                                                 </div>
                                             </td>
-
-                                            <!-- KOLOM BUKU -->
                                             <td class="p-5 align-middle">
                                                 <div class="flex gap-4 items-start">
-                                                    <!-- Cover Mini -->
                                                     <div class="w-10 h-14 bg-gray-200 rounded shadow-sm overflow-hidden flex-shrink-0">
                                                         <?php
                                                         $coverPath = '../uploads/covers/' . $h['book_cover'];
                                                         if (!empty($h['book_cover']) && file_exists($coverPath)):
                                                         ?>
                                                             <img src="<?= $coverPath ?>" class="w-full h-full object-cover">
-                                                        <?php else: ?>
-                                                            <div class="w-full h-full flex items-center justify-center text-[10px] text-gray-400 text-center leading-none p-1">No Cover</div>
                                                         <?php endif; ?>
                                                     </div>
-
-                                                    <!-- Info Buku -->
                                                     <div class="max-w-xs">
-                                                        <div class="font-bold text-gray-800 text-sm line-clamp-1" title="<?= htmlspecialchars($h['book_title']) ?>">
-                                                            <?= htmlspecialchars($h['book_title']) ?>
-                                                        </div>
-                                                        <div class="text-xs text-gray-500 mt-0.5">
-                                                            Karya: <span class="text-gray-700"><?= htmlspecialchars($h['book_author']) ?></span>
-                                                        </div>
+                                                        <div class="font-bold text-gray-800 text-sm line-clamp-1"><?= htmlspecialchars($h['book_title']) ?></div>
+                                                        <div class="text-xs text-gray-500 mt-0.5">Karya: <?= htmlspecialchars($h['book_author']) ?></div>
                                                     </div>
                                                 </div>
                                             </td>
-
-                                            <!-- KOLOM TIPE -->
                                             <td class="p-5 align-middle">
-                                                <?php
-                                                $badgeColor = match ($h['book_type']) {
-                                                    'BOOK' => 'bg-blue-50 text-blue-700 border-blue-100',
-                                                    'JOURNAL' => 'bg-orange-50 text-orange-700 border-orange-100',
-                                                    'ARTICLE' => 'bg-green-50 text-green-700 border-green-100',
-                                                    default => 'bg-gray-50 text-gray-700'
-                                                };
-                                                ?>
-                                                <span class="px-2.5 py-1 rounded text-xs font-bold border <?= $badgeColor ?>">
+                                                <span class="px-2.5 py-1 rounded text-xs font-bold border bg-blue-50 text-blue-700 border-blue-100">
                                                     <?= $h['book_type'] ?>
                                                 </span>
                                             </td>
-
-                                            <!-- KOLOM WAKTU -->
                                             <td class="p-5 align-middle text-right">
-                                                <div class="text-sm font-bold text-gray-700" title="<?= $h['read_at'] ?>">
-                                                    <?= time_elapsed_string($h['read_at']) ?>
-                                                </div>
-                                                <div class="text-xs text-gray-400 mt-1">
-                                                    <?= date('d M Y, H:i', strtotime($h['read_at'])) ?>
-                                                </div>
+                                                <div class="text-sm font-bold text-gray-700"><?= time_elapsed_string($h['read_at']) ?></div>
+                                                <div class="text-xs text-gray-400"><?= date('H:i', strtotime($h['read_at'])) ?></div>
                                             </td>
                                         </tr>
                                     <?php endwhile; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="4" class="p-10 text-center text-gray-400 italic">
-                                            Belum ada aktivitas membaca.
-                                        </td>
-                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
