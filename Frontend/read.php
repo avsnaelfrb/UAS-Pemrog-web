@@ -1,9 +1,5 @@
 <?php
 
-/**
- * File Reader - Menampilkan PDF viewer
- * Dengan perbaikan Flow Navigasi (Dynamic Back Button)
- */
 require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
@@ -18,7 +14,6 @@ if (!isset($_GET['id'])) {
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// Ambil Data Buku
 $query = "SELECT * FROM books WHERE id = $id";
 $result = mysqli_query($conn, $query);
 $book = mysqli_fetch_assoc($result);
@@ -27,16 +22,8 @@ if (!$book) {
     die("Buku tidak ditemukan.");
 }
 
-// Logika Navigasi Kembali (Dynamic Back URL)
 $from_page = isset($_GET['from']) ? $_GET['from'] : '';
 
-/**
- * PERBAIKAN FLOW NAVIGASI:
- * 1. Jika berasal dari 'detail', kembali ke detail.php?id=...
- * 2. Jika Admin, kembali ke sub-page dashboard admin yang sesuai.
- * 3. Jika Penerbit, kembali ke dashboard publisher.
- * 4. Default untuk User adalah kembali ke Detail Buku (flow paling umum).
- */
 if ($from_page === 'detail') {
     $back_url = "detail.php?id=$id";
 } elseif ($_SESSION['role'] == 'ADMIN') {
@@ -44,11 +31,9 @@ if ($from_page === 'detail') {
 } elseif ($_SESSION['role'] == 'PENERBIT') {
     $back_url = "dashboard-publisher.php";
 } else {
-    // Default untuk user biasa adalah kembali ke halaman detail buku
     $back_url = "detail.php?id=$id";
 }
 
-// Catat Riwayat Baca (Hanya untuk User Biasa agar tidak mengotori history admin)
 if ($_SESSION['role'] == 'USER') {
     mysqli_query($conn, "INSERT IGNORE INTO history (user_id, book_id) VALUES ($user_id, $id)");
 }
