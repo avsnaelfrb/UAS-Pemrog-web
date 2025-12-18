@@ -5,31 +5,28 @@
  * Versi ini dilengkapi dengan error reporting untuk mempermudah debugging.
  */
 
-// 1. Aktifkan Error Reporting untuk Debugging (Hanya selama masa perbaikan)
+// 1. Aktifkan Error Reporting untuk Debugging
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // 2. Memulai session secara standar
 if (session_status() === PHP_SESSION_NONE) {
-    // Pastikan session tersimpan dengan benar di lingkungan cloud
     ini_set('session.cookie_path', '/');
     session_start();
 }
 
-// 3. Cek apakah ekstensi MySQLi terpasang (Penting untuk Railway)
+// 3. Cek apakah ekstensi MySQLi terpasang
 if (!extension_loaded('mysqli')) {
-    die("FATAL: Ekstensi 'mysqli' tidak ditemukan. Pastikan composer.json Anda sudah menyertakan 'ext-mysqli'.");
+    die("FATAL: Ekstensi 'mysqli' tidak ditemukan. Pastikan file 'composer.json' Anda sudah ada di root dan berisi 'ext-mysqli'.");
 }
 
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+mysqli_report(MYSQLI_REPORT_OFF); // Matikan lapor otomatis agar kita bisa handle manual
 
 /**
  * PENGATURAN DATABASE MENGGUNAKAN CONNECTION STRING
  */
-// Railway menyediakan variabel 'MYSQL_URL' atau 'DATABASE_URL'.
 $db_url = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: "mysql://root:FOWHIlcosnZmjplwIBrWnDxjTmpqENwC@trolley.proxy.rlwy.net:40029/railway";
 
-// Bedah URL untuk mendapatkan komponen database
 $db_parts = parse_url($db_url);
 
 if (!$db_parts) {
@@ -42,15 +39,16 @@ $pass = $db_parts['pass'] ?? '';
 $db   = isset($db_parts['path']) ? ltrim($db_parts['path'], '/') : 'railway';
 $port = $db_parts['port'] ?? 3306;
 
-try {
-    // Koneksi menggunakan data hasil bedah URL
-    $conn = mysqli_connect($host, $user, $pass, $db, $port);
-    mysqli_query($conn, "SET SESSION sql_mode = ''");
-    mysqli_query($conn, "SET time_zone = '+07:00'");
-} catch (Exception $e) {
-    // Tampilkan error spesifik jika koneksi gagal
-    die("Koneksi database gagal: " . $e->getMessage() . " (Host: $host, DB: $db)");
+// Mencoba koneksi
+$conn = mysqli_connect($host, $user, $pass, $db, $port);
+
+if (!$conn) {
+    die("Koneksi database gagal! <br>Error: " . mysqli_connect_error() . " (Code: " . mysqli_connect_errno() . ")");
 }
+
+// Set setting tambahan
+mysqli_query($conn, "SET SESSION sql_mode = ''");
+mysqli_query($conn, "SET time_zone = '+07:00'");
 
 /**
  * FUNGSI HELPER
@@ -58,7 +56,6 @@ try {
 
 function redirect($url)
 {
-    // Pastikan session ditulis sebelum redirect
     session_write_close();
     header("Location: $url");
     exit();
@@ -67,10 +64,7 @@ function redirect($url)
 function uploadFile($file, $destination)
 {
     if ($file['error'] !== UPLOAD_ERR_OK) return false;
-
-    if (!file_exists($destination)) {
-        mkdir($destination, 0777, true);
-    }
+    if (!file_exists($destination)) mkdir($destination, 0777, true);
 
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $fileName = time() . '_' . rand(100, 999) . '.' . $ext;
