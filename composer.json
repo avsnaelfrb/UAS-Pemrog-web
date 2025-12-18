@@ -1,8 +1,0 @@
-{
-    "name": "uas/e-library",
-    "description": "PHP Native E-Library for Railway",
-    "require": {
-        "php": ">=8.0",
-        "ext-mysqli": "*"
-    }
-}
