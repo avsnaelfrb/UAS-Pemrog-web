@@ -11,9 +11,8 @@ $host = 'localhost';
 $user = 'root';      // Default XAMPP
 $pass = '';          // Default XAMPP
 $db   = 'elibrary_db'; // Nama database Anda di PHPMyAdmin
-$port = 3306;
 
-$conn = mysqli_connect($host, $user, $pass, $db, $port);
+$conn = mysqli_connect($host, $user, $pass, $db);
 
 if (!$conn) {
     die("Koneksi database gagal! Pastikan MySQL di XAMPP sudah aktif. <br>Error: " . mysqli_connect_error());
