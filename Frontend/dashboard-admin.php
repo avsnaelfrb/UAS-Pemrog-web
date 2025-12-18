@@ -150,6 +150,8 @@ if (!function_exists('time_elapsed_string')) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .active-nav {
             background-color: #eff6ff;
@@ -171,39 +173,65 @@ if (!function_exists('time_elapsed_string')) {
     <div class="flex min-h-screen">
         <aside class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r hidden lg:block">
             <div class="p-6 border-b flex flex-col items-center">
-                <div class="text-3xl mb-2">🛡️</div>
+                <div class="mb-2 text-blue-800">
+                    <i data-lucide="shield-check" class="w-10 h-10"></i>
+                </div>
                 <h1 class="font-bold text-gray-800">Admin Panel</h1>
                 <p class="text-xs text-gray-500">Moderation Mode</p>
             </div>
             <nav class="p-4 space-y-1">
                 <div class="text-xs font-bold text-gray-400 px-4 mt-2">UTAMA</div>
                 <a href="?page=books" class="flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'books' ? 'active-nav' : '' ?>">
-                    <span>📚 Kelola Buku</span>
+                    <span class="flex items-center">
+                        <i data-lucide="library" class="w-4 h-4 mr-2"></i> Kelola Buku
+                    </span>
                 </a>
-                <a href="?page=genres" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'genres' ? 'active-nav' : '' ?>">📂 Kelola Genre</a>
-                <a href="?page=users" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'users' ? 'active-nav' : '' ?>">👥 Kelola User</a>
-                <a href="?page=history" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'history' ? 'active-nav' : '' ?>">⏳ Riwayat Baca</a>
+                <a href="?page=genres" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'genres' ? 'active-nav' : '' ?>">
+                    <i data-lucide="folder" class="w-4 h-4 mr-2"></i> Kelola Genre
+                </a>
+                <a href="?page=users" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'users' ? 'active-nav' : '' ?>">
+                    <i data-lucide="users" class="w-4 h-4 mr-2"></i> Kelola User
+                </a>
+                <a href="?page=history" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'history' ? 'active-nav' : '' ?>">
+                    <i data-lucide="history" class="w-4 h-4 mr-2"></i> Riwayat Baca
+                </a>
 
                 <div class="text-xs font-bold text-gray-400 px-4 mt-6">VALIDASI</div>
                 <a href="?page=validation_users" class="flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'validation_users' ? 'active-nav' : '' ?>">
-                    <span>🥇 Req. Penerbit</span>
+                    <span class="flex items-center">
+                        <i data-lucide="medal" class="w-4 h-4 mr-2"></i> Req. Penerbit
+                    </span>
                     <?php if ($notif_req_penerbit > 0): ?><span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"><?= $notif_req_penerbit ?></span><?php endif; ?>
                 </a>
                 <a href="?page=validation_books" class="flex justify-between items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'validation_books' ? 'active-nav' : '' ?>">
-                    <span>📖 Req. Buku</span>
+                    <span class="flex items-center">
+                        <i data-lucide="book-open-check" class="w-4 h-4 mr-2"></i> Req. Buku
+                    </span>
                     <?php if ($notif_req_buku > 0): ?><span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"><?= $notif_req_buku ?></span><?php endif; ?>
                 </a>
 
                 <div class="text-xs font-bold text-gray-400 px-4 mt-6">AKUN</div>
-                <a href="profile.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50">⚙️ Edit Profil</a>
-                <a href="logout.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-50 text-red-600">🚪 Logout</a>
+                <a href="profile.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50">
+                    <i data-lucide="settings" class="w-4 h-4 mr-2"></i> Edit Profil
+                </a>
+                <a href="logout.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-50 text-red-600">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Logout
+                </a>
             </nav>
         </aside>
 
         <main class="flex-1 lg:ml-64 p-8">
             <!-- Notifikasi -->
-            <?php if ($message): ?><div class="bg-green-100 text-green-700 p-4 rounded mb-6">✅ <?= $message ?></div><?php endif; ?>
-            <?php if ($error_msg): ?><div class="bg-red-100 text-red-700 p-4 rounded mb-6">❌ <?= $error_msg ?></div><?php endif; ?>
+            <?php if ($message): ?>
+                <div class="bg-green-100 text-green-700 p-4 rounded mb-6 flex items-center">
+                    <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i> <?= $message ?>
+                </div>
+            <?php endif; ?>
+            <?php if ($error_msg): ?>
+                <div class="bg-red-100 text-red-700 p-4 rounded mb-6 flex items-center">
+                    <i data-lucide="alert-circle" class="w-5 h-5 mr-2"></i> <?= $error_msg ?>
+                </div>
+            <?php endif; ?>
 
             <?php switch ($active_page):
 
@@ -214,7 +242,9 @@ if (!function_exists('time_elapsed_string')) {
             ?>
                     <div class="flex justify-between items-end mb-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">📚 Semua Koleksi Digital</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="library" class="w-8 h-8 text-blue-600 mr-2"></i> Semua Koleksi Digital
+                            </h2>
                             <p class="text-gray-500 text-sm mt-1">Kelola dan moderasi konten buku dalam sistem.</p>
                         </div>
                         <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold border border-blue-100">
@@ -274,7 +304,7 @@ if (!function_exists('time_elapsed_string')) {
                                             </td>
                                             <td class="p-5 align-top text-right">
                                                 <a href="?page=books&delete_book=<?= $b['id'] ?>" onclick="return confirm('PERINGATAN: Menghapus buku ini bersifat permanen. Lanjutkan?')" class="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-lg transition border border-red-100">
-                                                    <span>🗑️</span> Hapus
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus
                                                 </a>
                                             </td>
                                         </tr>
@@ -307,7 +337,9 @@ if (!function_exists('time_elapsed_string')) {
                 ?>
                     <div class="flex justify-between items-end mb-8">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">📂 Kelola Kategori Genre</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="folder-open" class="w-8 h-8 text-blue-600 mr-2"></i> Kelola Kategori Genre
+                            </h2>
                             <p class="text-gray-500 text-sm mt-1">Atur kategori buku agar katalog lebih terstruktur.</p>
                         </div>
                         <div class="flex gap-4">
@@ -328,7 +360,9 @@ if (!function_exists('time_elapsed_string')) {
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-4">
                             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-                                <span class="bg-green-100 text-green-600 w-8 h-8 flex items-center justify-center rounded-lg text-sm">➕</span>
+                                <span class="bg-green-100 text-green-600 w-8 h-8 flex items-center justify-center rounded-lg text-sm">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                </span>
                                 Tambah Genre Baru
                             </h3>
                             <form method="POST">
@@ -371,7 +405,9 @@ if (!function_exists('time_elapsed_string')) {
                                                     </span>
                                                 </td>
                                                 <td class="p-5 text-right">
-                                                    <a href="?page=genres&delete_genre=<?= $g['id'] ?>" onclick="return confirm('Yakin hapus genre?')" class="text-gray-400 hover:text-red-600 transition-colors">🗑️</a>
+                                                    <a href="?page=genres&delete_genre=<?= $g['id'] ?>" onclick="return confirm('Yakin hapus genre?')" class="text-gray-400 hover:text-red-600 transition-colors inline-block">
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </a>
                                                 </td>
                                             </tr>
                                         <?php endwhile; ?>
@@ -389,7 +425,9 @@ if (!function_exists('time_elapsed_string')) {
                 ?>
                     <div class="flex justify-between items-end mb-8">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">📖 Antrean Validasi Buku</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="book-check" class="w-8 h-8 text-orange-600 mr-2"></i> Antrean Validasi Buku
+                            </h2>
                             <p class="text-gray-500 text-sm mt-1">Review kiriman buku dari para penerbit sebelum diterbitkan secara luas.</p>
                         </div>
                         <div class="bg-orange-50 text-orange-700 px-4 py-2 rounded-lg text-sm font-bold border border-orange-100 flex items-center gap-2">
@@ -403,7 +441,9 @@ if (!function_exists('time_elapsed_string')) {
 
                     <?php if (mysqli_num_rows($req_books) == 0): ?>
                         <div class="bg-white p-20 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
-                            <div class="text-5xl mb-4">✨</div>
+                            <div class="mb-4 text-yellow-400">
+                                <i data-lucide="sparkles" class="w-16 h-16"></i>
+                            </div>
                             <h3 class="text-lg font-bold text-gray-800">Semua Beres!</h3>
                             <p class="text-gray-500 max-w-xs mx-auto">Tidak ada buku baru dalam antrean validasi saat ini.</p>
                         </div>
@@ -420,7 +460,7 @@ if (!function_exists('time_elapsed_string')) {
                                             <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                                         <?php else: ?>
                                             <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 p-4">
-                                                <span class="text-3xl mb-2">🖼️</span>
+                                                <i data-lucide="image" class="w-8 h-8 mb-2"></i>
                                                 <span class="text-[10px] font-bold uppercase tracking-widest">No Cover</span>
                                             </div>
                                         <?php endif; ?>
@@ -471,10 +511,10 @@ if (!function_exists('time_elapsed_string')) {
                                         <!-- Action Buttons -->
                                         <div class="flex flex-wrap gap-2">
                                             <a href="read.php?id=<?= $b['id'] ?>" target="_blank" class="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm">
-                                                <span>👀</span> Pratinjau
+                                                <i data-lucide="eye" class="w-4 h-4"></i> Pratinjau
                                             </a>
                                             <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-green-700 hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-green-100">
-                                                <span>✔️</span> Terbit
+                                                <i data-lucide="check" class="w-4 h-4"></i> Terbit
                                             </a>
                                             <a href="?page=validation_books&reject_book=<?= $b['id'] ?>" onclick="return confirm('Tolak buku ini?')" class="inline-flex items-center justify-center w-11 h-11 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 hover:text-red-700 transition-all border border-red-100">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -489,74 +529,62 @@ if (!function_exists('time_elapsed_string')) {
                     <?php endif;
                     break; ?>
 
-                <?php break;
-                // === MENU REQ. PENERBIT (HANYA INI YANG DIMODERNISASI MAKSIMAL DENGAN TEMA BIRU) ===
+                <?php
+                    // === HALAMAN VALIDASI USER ===
                 case 'validation_users':
-                    $req_users = mysqli_query($conn, "SELECT * FROM users WHERE request_penerbit='1' ORDER BY created_at DESC");
+                    $req_users = mysqli_query($conn, "SELECT * FROM users WHERE request_penerbit='1' ORDER BY created_at ASC");
                 ?>
-                    <div class="flex justify-between items-center mb-8">
+                    <div class="flex justify-between items-end mb-8">
                         <div>
-                            <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Validasi Penerbit</h2>
-                            <p class="text-gray-500 text-sm mt-1">Review dan kelola permohonan lisensi kontributor baru.</p>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="medal" class="w-8 h-8 text-yellow-600 mr-2"></i> Validasi Pengajuan Penerbit
+                            </h2>
+                            <p class="text-gray-500 text-sm mt-1">Tinjau pengguna yang ingin menjadi kontributor penerbit.</p>
                         </div>
-                        <?php if (mysqli_num_rows($req_users) > 0): ?>
-                            <div class="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-2xl border border-blue-100 shadow-sm">
-                                <span class="relative flex h-3 w-3">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
-                                </span>
-                                <span class="text-sm font-bold"><?= mysqli_num_rows($req_users) ?> Pengajuan Baru</span>
-                            </div>
-                        <?php endif; ?>
+                        <div class="bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg text-sm font-bold border border-yellow-100 flex items-center gap-2">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                            </span>
+                            <?= mysqli_num_rows($req_users) ?> Permintaan
+                        </div>
                     </div>
 
                     <?php if (mysqli_num_rows($req_users) == 0): ?>
-                        <div class="bg-white p-20 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
-                            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-4xl mb-6">✨</div>
-                            <h3 class="text-xl font-bold text-gray-800">Antrean Bersih!</h3>
-                            <p class="text-gray-400 mt-2 max-w-xs">Semua permohonan penerbit telah diproses. Tidak ada tugas tertunda untuk saat ini.</p>
+                        <div class="bg-white p-20 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="mb-4 text-green-500">
+                                <i data-lucide="check-circle-2" class="w-16 h-16"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-800">Semua Permintaan Tertangani</h3>
+                            <p class="text-gray-500 max-w-xs mx-auto">Saat ini tidak ada user yang mengajukan diri sebagai penerbit.</p>
                         </div>
                     <?php else: ?>
                         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <?php while ($r = mysqli_fetch_assoc($req_users)):
-                                $initial = strtoupper(substr($r['name'] ?? 'U', 0, 1));
+                                $initial = strtoupper(substr($r['name'], 0, 1));
                             ?>
-                                <div class="bg-white p-1 rounded-3xl border border-gray-100 user-card-modern shadow-sm overflow-hidden flex flex-col">
-                                    <div class="p-6 flex-1">
-                                        <div class="flex items-start justify-between mb-6">
-                                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-200">
-                                                <?= $initial ?>
-                                            </div>
-                                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                                                ID: #<?= $r['id'] ?>
-                                            </span>
-                                        </div>
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
+                                    <div class="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
 
-                                        <div class="mb-6">
-                                            <h4 class="font-black text-xl text-gray-900 leading-none mb-1 truncate" title="<?= htmlspecialchars($r['name']) ?>">
-                                                <?= htmlspecialchars($r['name']) ?>
-                                            </h4>
-                                            <p class="text-sm text-gray-400 truncate"><?= htmlspecialchars($r['email']) ?></p>
-                                        </div>
-
-                                        <div class="grid grid-cols-2 gap-3 mb-2">
-                                            <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
-                                                <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Role Asal</p>
-                                                <p class="text-xs font-black text-gray-700"><?= $r['role'] ?></p>
-                                            </div>
-                                            <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
-                                                <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Bergabung</p>
-                                                <p class="text-xs font-black text-gray-700"><?= date('d M Y', strtotime($r['created_at'])) ?></p>
-                                            </div>
-                                        </div>
+                                    <div class="w-20 h-20 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center font-bold text-3xl mb-4 shadow-sm border border-yellow-100 group-hover:scale-110 transition-transform">
+                                        <?= $initial ?>
                                     </div>
 
-                                    <div class="p-4 bg-gray-50/50 border-t border-gray-50 flex gap-3">
-                                        <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl text-xs font-black transition-all shadow-md shadow-blue-100 text-center flex items-center justify-center gap-2">
-                                            <span>✓</span> Terima
+                                    <h3 class="font-bold text-lg text-gray-800 mb-1"><?= htmlspecialchars($r['name']) ?></h3>
+                                    <p class="text-gray-500 text-sm mb-4 flex items-center justify-center gap-1">
+                                        <i data-lucide="mail" class="w-3 h-3"></i> <?= htmlspecialchars($r['email']) ?>
+                                    </p>
+
+                                    <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                        Member Sejak <?= date('M Y', strtotime($r['created_at'])) ?>
+                                    </div>
+
+                                    <div class="flex gap-2 w-full mt-auto">
+                                        <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                                            <i data-lucide="check" class="w-4 h-4"></i> Setujui
                                         </a>
-                                        <a href="?page=validation_users&reject_publisher=<?= $r['id'] ?>" onclick="return confirm('Tolak pengajuan ini?')" class="px-5 bg-white hover:bg-red-50 text-red-500 py-3 rounded-2xl text-xs font-black transition-all border border-gray-200 hover:border-red-200 text-center">
-                                            Tolak
+                                        <a href="?page=validation_users&reject_publisher=<?= $r['id'] ?>" onclick="return confirm('Tolak pengajuan ini?')" class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
+                                            <i data-lucide="x" class="w-4 h-4"></i> Tolak
                                         </a>
                                     </div>
                                 </div>
@@ -571,7 +599,9 @@ if (!function_exists('time_elapsed_string')) {
                 ?>
                     <div class="flex justify-between items-end mb-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">👥 Daftar Pengguna</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="users" class="w-8 h-8 text-purple-600 mr-2"></i> Daftar Pengguna
+                            </h2>
                             <p class="text-gray-500 text-sm mt-1">Kelola akun pengguna, penerbit, dan admin.</p>
                         </div>
                         <div class="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg text-sm font-bold border border-purple-100">
@@ -627,7 +657,7 @@ if (!function_exists('time_elapsed_string')) {
                                             <td class="p-5 align-middle text-right">
                                                 <?php if ($u['id'] != $_SESSION['user_id']): ?>
                                                     <a href="?delete_user=<?= $u['id'] ?>" onclick="return confirm('Yakin hapus user ini?')" class="inline-flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-bold bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition">
-                                                        <span>🗑️</span> Hapus
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus
                                                     </a>
                                                 <?php endif; ?>
                                             </td>
@@ -654,7 +684,9 @@ if (!function_exists('time_elapsed_string')) {
                 ?>
                     <div class="flex justify-between items-end mb-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">⏳ Log Aktivitas Pembaca</h2>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i data-lucide="history" class="w-8 h-8 text-indigo-600 mr-2"></i> Log Aktivitas Pembaca
+                            </h2>
                             <p class="text-gray-500 text-sm mt-1">Pantau aktivitas membaca pengguna secara real-time.</p>
                         </div>
                         <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-bold border border-indigo-100">
@@ -726,6 +758,10 @@ if (!function_exists('time_elapsed_string')) {
             <?php endswitch; ?>
         </main>
     </div>
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>
