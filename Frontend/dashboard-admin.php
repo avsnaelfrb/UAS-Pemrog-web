@@ -489,38 +489,81 @@ if (!function_exists('time_elapsed_string')) {
                     <?php endif;
                     break; ?>
 
-                <?php
-                    // === HALAMAN VALIDASI USER ===
+                <?php break;
+                // === MENU REQ. PENERBIT (HANYA INI YANG DIMODERNISASI MAKSIMAL DENGAN TEMA BIRU) ===
                 case 'validation_users':
-                    $req_users = mysqli_query($conn, "SELECT * FROM users WHERE request_penerbit='1'");
+                    $req_users = mysqli_query($conn, "SELECT * FROM users WHERE request_penerbit='1' ORDER BY created_at DESC");
                 ?>
-                    <h2 class="text-2xl font-bold mb-6">Validasi Pengajuan Penerbit</h2>
-                    <?php if (mysqli_num_rows($req_users) == 0): ?><p class="text-gray-500">Tidak ada permintaan baru.</p><?php else: ?>
-                        <div class="bg-white rounded-xl shadow border overflow-hidden">
-                            <table class="w-full text-left">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="p-4">Nama</th>
-                                        <th class="p-4">Email</th>
-                                        <th class="p-4 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php while ($r = mysqli_fetch_assoc($req_users)): ?>
-                                        <tr class="border-b">
-                                            <td class="p-4"><?= htmlspecialchars($r['name']) ?></td>
-                                            <td class="p-4"><?= htmlspecialchars($r['email']) ?></td>
-                                            <td class="p-4 text-right space-x-2">
-                                                <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200">Setujui</a>
-                                                <a href="?page=validation_users&reject_publisher=<?= $r['id'] ?>" class="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200">Tolak</a>
-                                            </td>
-                                        </tr>
-                                    <?php endwhile; ?>
-                                </tbody>
-                            </table>
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 tracking-tight">Validasi Penerbit</h2>
+                            <p class="text-gray-500 text-sm mt-1">Review dan kelola permohonan lisensi kontributor baru.</p>
+                        </div>
+                        <?php if (mysqli_num_rows($req_users) > 0): ?>
+                            <div class="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-2xl border border-blue-100 shadow-sm">
+                                <span class="relative flex h-3 w-3">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+                                </span>
+                                <span class="text-sm font-bold"><?= mysqli_num_rows($req_users) ?> Pengajuan Baru</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if (mysqli_num_rows($req_users) == 0): ?>
+                        <div class="bg-white p-20 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
+                            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-4xl mb-6">✨</div>
+                            <h3 class="text-xl font-bold text-gray-800">Antrean Bersih!</h3>
+                            <p class="text-gray-400 mt-2 max-w-xs">Semua permohonan penerbit telah diproses. Tidak ada tugas tertunda untuk saat ini.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <?php while ($r = mysqli_fetch_assoc($req_users)):
+                                $initial = strtoupper(substr($r['name'] ?? 'U', 0, 1));
+                            ?>
+                                <div class="bg-white p-1 rounded-3xl border border-gray-100 user-card-modern shadow-sm overflow-hidden flex flex-col">
+                                    <div class="p-6 flex-1">
+                                        <div class="flex items-start justify-between mb-6">
+                                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-200">
+                                                <?= $initial ?>
+                                            </div>
+                                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                                ID: #<?= $r['id'] ?>
+                                            </span>
+                                        </div>
+
+                                        <div class="mb-6">
+                                            <h4 class="font-black text-xl text-gray-900 leading-none mb-1 truncate" title="<?= htmlspecialchars($r['name']) ?>">
+                                                <?= htmlspecialchars($r['name']) ?>
+                                            </h4>
+                                            <p class="text-sm text-gray-400 truncate"><?= htmlspecialchars($r['email']) ?></p>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3 mb-2">
+                                            <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                                                <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Role Asal</p>
+                                                <p class="text-xs font-black text-gray-700"><?= $r['role'] ?></p>
+                                            </div>
+                                            <div class="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                                                <p class="text-[9px] font-bold text-gray-400 uppercase mb-1">Bergabung</p>
+                                                <p class="text-xs font-black text-gray-700"><?= date('d M Y', strtotime($r['created_at'])) ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-4 bg-gray-50/50 border-t border-gray-50 flex gap-3">
+                                        <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl text-xs font-black transition-all shadow-md shadow-blue-100 text-center flex items-center justify-center gap-2">
+                                            <span>✓</span> Terima
+                                        </a>
+                                        <a href="?page=validation_users&reject_publisher=<?= $r['id'] ?>" onclick="return confirm('Tolak pengajuan ini?')" class="px-5 bg-white hover:bg-red-50 text-red-500 py-3 rounded-2xl text-xs font-black transition-all border border-gray-200 hover:border-red-200 text-center">
+                                            Tolak
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endwhile; ?>
                         </div>
                     <?php endif;
-                                                                                                                        break; ?>
+                    break; ?>
 
                 <?php
                 case 'users':
