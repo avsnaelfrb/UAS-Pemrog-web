@@ -94,6 +94,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail: <?= htmlspecialchars($book['title']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
@@ -104,8 +105,8 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 <body class="bg-gray-50 font-sans">
 
     <?php if ($msg_save): ?>
-        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce">
-            ✅ <?= $msg_save ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2">
+            <i data-lucide="check-circle" class="w-5 h-5"></i> <?= $msg_save ?>
         </div>
     <?php endif; ?>
 
@@ -117,12 +118,14 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
         <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition h-full overflow-y-auto">
             <div class="p-6 border-b flex flex-col items-center relative">
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
                 <div class="w-16 h-16 <?= $bg_soft ?> <?= $text_main ?> rounded-full flex items-center justify-center text-2xl mb-3">
-                    <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
+                    <?php if ($role == 'PENERBIT'): ?>
+                        <i data-lucide="pen-tool" class="w-8 h-8"></i>
+                    <?php else: ?>
+                        <i data-lucide="user" class="w-8 h-8"></i>
+                    <?php endif; ?>
                 </div>
                 <h1 class="text-xl font-bold <?= $text_dark ?>">
                     <?= ($role == 'PENERBIT') ? 'Publisher' : 'E-Library' ?>
@@ -133,48 +136,51 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
             <nav class="p-4 space-y-2">
                 <?php if ($role == 'ADMIN'): ?>
                     <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
-                        <span>⚡</span> Admin Panel
+                        <i data-lucide="zap" class="w-5 h-5"></i> Admin Panel
                     </a>
                 <?php endif; ?>
 
                 <a href="<?= $back_link ?>" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?> shadow-sm">
-                    <span>📚</span> Katalog
+                    <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
 
                 <?php if ($role == 'PENERBIT'): ?>
                     <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
-                        <span>📂</span> Terbitan Saya
+                        <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
                     </a>
                     <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
-                        <span>📤</span> Upload Karya
+                        <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
                     </a>
                 <?php endif; ?>
 
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
-                    <span>🕒</span> Riwayat
+                    <i data-lucide="history" class="w-5 h-5"></i> Riwayat
                 </a>
                 <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
-                    <span>🔖</span> Koleksi
+                    <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
                 </a>
                 <a href="profile.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
-                    <span>⚙️</span> Profile
+                    <i data-lucide="settings" class="w-5 h-5"></i> Profile
                 </a>
-                <!-- TOMBOL REQUEST PENERBIT -->
-                <div class="pt-4 mt-4 border-t border-gray-200">
-                    <?php if ($current_user['request_penerbit'] == '0'): ?>
-                        <form method="POST">
-                            <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                                <span>✒️</span> Jadi Penerbit
-                            </button>
-                        </form>
-                    <?php else: ?>
-                        <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center">
-                            ⏳ Menunggu Konfirmasi Penerbit
-                        </div>
-                    <?php endif; ?>
-                </div>
+
+                <?php if ($role == 'USER'): ?>
+                    <!-- TOMBOL REQUEST PENERBIT -->
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <?php if ($current_user['request_penerbit'] == '0'): ?>
+                            <form method="POST">
+                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                                    <i data-lucide="pen-tool" class="w-5 h-5"></i> Jadi Penerbit
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center flex items-center justify-center gap-2">
+                                <i data-lucide="hourglass" class="w-4 h-4"></i> Menunggu Konfirmasi Penerbit
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
                 <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
-                    <span>🚪</span> Keluar
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
                 </a>
             </nav>
         </aside>
@@ -184,22 +190,22 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                        </svg>
+                        <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                     <h1 class="font-bold <?= $text_dark ?> text-lg">Detail Buku</h1>
                 </div>
                 <div class="w-8 h-8 <?= $bg_soft ?> rounded-full flex items-center justify-center text-sm border <?= $border_main ?>">
-                    <?= ($role == 'PENERBIT') ? '✒️' : '👤' ?>
+                    <?php if ($role == 'PENERBIT'): ?>
+                        <i data-lucide="pen-tool" class="w-4 h-4 text-purple-600"></i>
+                    <?php else: ?>
+                        <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <div class="max-w-5xl mx-auto">
                 <a href="<?= $back_link ?>" class="inline-flex items-center text-gray-500 <?= $hover_text ?> mb-6 font-medium transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
                     Kembali ke Katalog
                 </a>
 
@@ -211,7 +217,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     <img src="<?= $coverPath ?>" class="w-full h-full object-cover">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                        <span class="text-5xl mb-2">📚</span>
+                                        <i data-lucide="book" class="w-12 h-12 mb-2"></i>
                                         <span class="text-sm">No Cover</span>
                                     </div>
                                 <?php endif; ?>
@@ -222,15 +228,15 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                 <?php if ($book['type'] == 'ARTICLE' && !empty($book['link'])): ?>
                                     <!-- Tipe Artikel: Buka Link -->
                                     <a href="<?= htmlspecialchars($book['link']) ?>" target="_blank" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
-                                        <span>🌐</span> Buka Artikel
+                                        <i data-lucide="globe" class="w-5 h-5"></i> Buka Artikel
                                     </a>
                                 <?php elseif ($book['file_exists']): ?>
                                     <!-- Tipe Buku/Jurnal: Buka PDF -->
                                     <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
-                                        <span>📖</span> Baca Sekarang
+                                        <i data-lucide="book-open" class="w-5 h-5"></i> Baca Sekarang
                                     </a>
                                 <?php else: ?>
-                                    <button disabled class="w-full py-3 bg-gray-300 text-gray-500 font-bold rounded-lg cursor-not-allowed">
+                                    <button disabled class="w-full py-3 bg-gray-300 text-gray-500 font-bold rounded-lg cursor-not-allowed flex items-center justify-center gap-2">
                                         File Tidak Tersedia
                                     </button>
                                 <?php endif; ?>
@@ -238,8 +244,11 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                 <!-- Tombol Simpan -->
                                 <form method="POST" class="w-full">
                                     <button type="submit" name="toggle_save" class="w-full py-3 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300' ?> font-bold rounded-lg transition flex items-center justify-center gap-2">
-                                        <span><?= $is_saved ? '🔖' : '🏷️' ?></span>
-                                        <?= $is_saved ? 'Tersimpan' : 'Simpan' ?>
+                                        <?php if ($is_saved): ?>
+                                            <i data-lucide="bookmark-minus" class="w-5 h-5"></i> Tersimpan
+                                        <?php else: ?>
+                                            <i data-lucide="bookmark-plus" class="w-5 h-5"></i> Simpan
+                                        <?php endif; ?>
                                     </button>
                                 </form>
                             </div>
@@ -271,8 +280,8 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                         foreach ($genres as $g):
                                             if (trim($g) == '') continue;
                                         ?>
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 border border-gray-200">
-                                                🏷️ <?= trim($g) ?>
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 border border-gray-200 gap-1">
+                                                <i data-lucide="tag" class="w-3 h-3 text-gray-400"></i> <?= trim($g) ?>
                                             </span>
                                         <?php endforeach; ?>
                                     </div>
@@ -293,6 +302,8 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
     </div>
 
     <script>
+        lucide.createIcons();
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
