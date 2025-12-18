@@ -1,9 +1,11 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
 
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
-    else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php'); // Redirect baru
+// Jika sudah login, lempar ke dashboard yang sesuai
+if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
+    $role = strtoupper($_SESSION['role']);
+    if ($role == 'ADMIN') redirect('dashboard-admin.php');
+    else if ($role == 'PENERBIT') redirect('dashboard-publisher.php');
     else redirect('dashboard-user.php');
 }
 
@@ -16,21 +18,17 @@ if (isset($_POST['login'])) {
     $query = "SELECT * FROM users WHERE email = '$email'";
     $result = mysqli_query($conn, $query);
 
-    if (!$result) {
-        die("Kesalahan Query Database: " . mysqli_error($conn));
-    }
-
-
     if (mysqli_num_rows($result) > 0) {
         $user = mysqli_fetch_assoc($result);
         if (password_verify($password, $user['password'])) {
+            // Set session dengan normalisasi role ke UPPERCASE
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
-            $_SESSION['role'] = $user['role'];
+            $_SESSION['role'] = strtoupper($user['role']);
 
-            // Redirect Berdasarkan Role
-            if ($user['role'] == 'ADMIN') redirect('dashboard-admin.php');
-            else if ($user['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
+            // Redirect berdasarkan role yang sudah dinormalisasi
+            if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
+            else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
             else redirect('dashboard-user.php');
         } else {
             $error = "Password salah!";
@@ -60,11 +58,11 @@ if (isset($_POST['login'])) {
                 </svg>
             </div>
             <h2 class="text-3xl font-bold text-gray-800">E-Library</h2>
-            <p class="text-gray-500 mt-2">Masuk ke akun anda</p>
+            <p class="text-gray-500 mt-2">Masuk ke akun Anda</p>
         </div>
 
         <?php if ($error): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm">
                 <?php echo $error; ?>
             </div>
         <?php endif; ?>
@@ -84,7 +82,7 @@ if (isset($_POST['login'])) {
         </form>
 
         <div class="mt-6 text-center">
-            <a href="register.php" class="text-blue-900 hover:text-blue-800 font-medium">Belum punya akun? Daftar</a>
+            <a href="register.php" class="text-blue-900 hover:text-blue-800 font-medium text-sm">Belum punya akun? Daftar</a>
         </div>
     </div>
 </body>

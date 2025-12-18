@@ -1,11 +1,15 @@
 <?php
 
 /**
- * KONFIGURASI DATABASE RAILWAY
+ * KONFIGURASI DATABASE RAILWAY - FIXED VERSION
  */
+
+// Memulai output buffering untuk mencegah error "headers already sent"
+ob_start();
+
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Mengambil environment variables dari Vercel
+// Mengambil environment variables dari Railway/Vercel
 $host = getenv('DB_HOST') ?: "localhost";
 $user = getenv('DB_USER') ?: "root";
 $pass = getenv('DB_PASSWORD') ?: "";
@@ -13,29 +17,27 @@ $db   = getenv('DB_NAME') ?: "elibrary_db";
 $port = (int)(getenv('DB_PORT') ?: 3306);
 
 try {
-    // Koneksi lebih simpel tanpa SSL TiDB
     $conn = mysqli_connect($host, $user, $pass, $db, $port);
+    // Menonaktifkan strict mode untuk kompatibilitas cloud
     mysqli_query($conn, "SET SESSION sql_mode = ''");
 } catch (Exception $e) {
     die("Koneksi database gagal. Silakan cek Environment Variables Anda.");
 }
 
-// Session management
+// Session management yang lebih aman
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-// Base URL detection
-$base_url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
 
 /**
  * FUNGSI HELPER
  */
 
+// Perbaikan fungsi redirect menggunakan Header (Standar PHP)
 function redirect($url)
 {
-    echo "<script>window.location.href='$url';</script>";
-    exit;
+    header("Location: $url");
+    exit();
 }
 
 function uploadFile($file, $destination)
@@ -58,10 +60,11 @@ function deleteFile($filePath)
 
 function getStatusBadge($status)
 {
+    $status = strtoupper($status);
     $badges = [
         'APPROVED' => '<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">Terbit</span>',
         'PENDING'  => '<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">Menunggu</span>',
         'REJECTED' => '<span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">Ditolak</span>'
     ];
-    return $badges[$status] ?? '';
+    return $badges[$status] ?? '<span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">' . $status . '</span>';
 }
