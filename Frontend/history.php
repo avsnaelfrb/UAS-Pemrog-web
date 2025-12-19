@@ -10,6 +10,7 @@ $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'];
 $message = '';
 
+// Tema Dinamis sesuai peran
 $theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
 $bg_soft = "bg-$theme-50";
 $text_main = "text-$theme-700";
@@ -26,18 +27,44 @@ $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 
+// PERBAIKAN QUERY: Menggunakan MAX(h.read_at) agar mengambil waktu terbaru jika ada data ganda
 $sql = "
-    SELECT b.id, b.title, b.author, b.cover, b.type, h.read_at,
-    GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
+    SELECT b.id, b.title, b.author, b.cover, b.type, MAX(h.read_at) as read_at,
+    GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names 
     FROM history h
     JOIN books b ON h.book_id = b.id
     LEFT JOIN book_genres bg ON b.id = bg.book_id 
     LEFT JOIN genres g ON bg.genre_id = g.id 
     WHERE h.user_id = $user_id
     GROUP BY b.id 
-    ORDER BY h.read_at DESC
+    ORDER BY read_at DESC
 ";
 $books = mysqli_query($conn, $sql);
+
+if (!function_exists('time_ago')) {
+    function time_ago($timestamp)
+    {
+        $time_ago = strtotime($timestamp);
+        $current_time = time();
+        $time_difference = $current_time - $time_ago;
+        $seconds = $time_difference;
+
+        $minutes      = round($seconds / 60);
+        $hours        = round($seconds / 3600);
+        $days         = round($seconds / 86400);
+        $weeks        = round($seconds / 604800);
+        $months       = round($seconds / 2629440);
+        $years        = round($seconds / 31553280);
+
+        if ($seconds <= 60) return "Baru saja";
+        else if ($minutes <= 60) return "$minutes menit lalu";
+        else if ($hours <= 24) return "$hours jam lalu";
+        else if ($days <= 7) return "$days hari lalu";
+        else if ($weeks <= 4.3) return "$weeks minggu lalu";
+        else if ($months <= 12) return "$months bulan lalu";
+        else return "$years tahun lalu";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -54,22 +81,11 @@ $books = mysqli_query($conn, $sql);
             transition: transform 0.3s ease-in-out;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .genre-scroll::-webkit-scrollbar {
-            width: 6px;
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -93,7 +109,6 @@ $books = mysqli_query($conn, $sql);
                 <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <!-- Ikon Profile Dinamis -->
                 <div class="w-16 h-16 <?= ($role == 'PENERBIT') ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' ?> rounded-full flex items-center justify-center text-2xl mb-3">
                     <?php if ($role == 'PENERBIT'): ?>
                         <i data-lucide="pen-tool" class="w-8 h-8"></i>
@@ -114,13 +129,11 @@ $books = mysqli_query($conn, $sql);
                     </a>
                 <?php endif; ?>
 
-                <!-- Link Dashboard Dinamis -->
                 <?php $dash_link = ($role == 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php'; ?>
                 <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
 
-                <!-- MENU KHUSUS PENERBIT (Updated) -->
                 <?php if ($role == 'PENERBIT'): ?>
                     <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
                         <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
@@ -131,12 +144,10 @@ $books = mysqli_query($conn, $sql);
                     </a>
                 <?php endif; ?>
 
-                <!-- Menu History Aktif (Style Dinamis) -->
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?>">
                     <i data-lucide="history" class="w-5 h-5"></i> Riwayat
                 </a>
 
-                <!-- Menu Koleksi -->
                 <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
                     <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
                 </a>
@@ -184,11 +195,16 @@ $books = mysqli_query($conn, $sql);
             </div>
 
             <div class="max-w-6xl mx-auto">
-                <div class="bg-white p-6 rounded-xl shadow-sm border mb-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                        <i data-lucide="history" class="w-6 h-6"></i> Aktivitas Terakhir
-                    </h2>
-                    <p class="text-gray-500 text-sm">Daftar buku yang baru saja Anda baca.</p>
+                <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <i data-lucide="history" class="w-6 h-6 text-blue-500"></i> Aktivitas Terakhir
+                        </h2>
+                        <p class="text-gray-500 text-sm">Daftar buku yang baru saja Anda baca.</p>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-lg border text-sm font-bold text-blue-600">
+                        Total: <?= mysqli_num_rows($books) ?> Buku
+                    </div>
                 </div>
 
                 <?php if (mysqli_num_rows($books) > 0): ?>
@@ -196,14 +212,7 @@ $books = mysqli_query($conn, $sql);
                         <?php while ($book = mysqli_fetch_assoc($books)) { ?>
                             <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 flex flex-col h-full group relative">
 
-                                <!-- Label Waktu Baca -->
-                                <div class="absolute top-3 left-3 z-10">
-                                    <span class="px-2 py-1 bg-black/60 text-white text-[10px] rounded backdrop-blur-sm flex items-center gap-1">
-                                        <i data-lucide="clock" class="w-3 h-3"></i> <?= date('d M Y, H:i', strtotime($book['read_at'])) ?>
-                                    </span>
-                                </div>
-
-                                <!-- Cover (UPDATED LOGIC) -->
+                                <!-- Cover -->
                                 <div class="h-64 bg-gray-100 relative overflow-hidden rounded-t-xl">
                                     <?php
                                     $coverPath = '../uploads/covers/' . $book['cover'];
@@ -216,23 +225,40 @@ $books = mysqli_query($conn, $sql);
                                             <span class="text-xs">No Cover</span>
                                         </div>
                                     <?php endif; ?>
+
+                                    <!-- Label Waktu Baca (Floating Style) -->
+                                    <div class="absolute top-3 left-3 right-3">
+                                        <div class="bg-black/60 backdrop-blur-sm text-white px-3 py-2 rounded-lg flex flex-col shadow-lg">
+                                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-orange-400 uppercase">
+                                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                                Terakhir Dibaca
+                                            </div>
+                                            <div class="text-xs font-medium">
+                                                <?= time_ago($book['read_at']) ?>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="p-5 flex-1 flex flex-col">
                                     <div class="flex justify-between items-start mb-2">
-                                        <div class="text-xs font-semibold <?= ($role == 'PENERBIT') ? 'text-purple-600 bg-purple-50' : 'text-blue-600 bg-blue-50' ?> tracking-wide uppercase px-2 py-1 rounded">
+                                        <div class="text-[10px] font-bold <?= ($role == 'PENERBIT') ? 'text-purple-600 bg-purple-50' : 'text-blue-600 bg-blue-50' ?> tracking-wide uppercase px-2 py-0.5 rounded">
                                             <?= $book['type'] ?>
                                         </div>
+                                        <span class="text-[9px] text-gray-400 font-bold"><?= date('d/m/y', strtotime($book['read_at'])) ?></span>
                                     </div>
 
-                                    <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2" title="<?= htmlspecialchars($book['title']) ?>">
+                                    <h3 class="font-bold text-gray-900 text-base mb-1 leading-snug line-clamp-2" title="<?= htmlspecialchars($book['title']) ?>">
                                         <?= htmlspecialchars($book['title']) ?>
                                     </h3>
-                                    <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
+                                    <p class="text-xs text-gray-500 mb-4"><?= htmlspecialchars($book['author']) ?></p>
 
-                                    <div class="mt-auto pt-4 border-t border-gray-100">
-                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
-                                            Lanjutkan Membaca
+                                    <div class="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2">
+                                        <a href="read.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 <?= $btn_main ?> text-white rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+                                            <i data-lucide="book-open" class="w-4 h-4"></i> Lanjutkan Membaca
+                                        </a>
+                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2 text-gray-400 hover:text-gray-700 text-[10px] font-bold transition">
+                                            Lihat Detail
                                         </a>
                                     </div>
                                 </div>

@@ -1,5 +1,4 @@
 <?php
-
 require_once dirname(__DIR__) . '/Backend/config.php';
 
 if (!isset($_SESSION['user_id'])) {
@@ -8,35 +7,43 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if (!isset($_GET['id'])) {
-    die("Buku tidak dipilih.");
+    header("Location: dashboard-user.php");
+    exit;
 }
 
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
+$role = $_SESSION['role'];
 
-$query = "SELECT * FROM books WHERE id = $id";
-$result = mysqli_query($conn, $query);
+// Ambil data buku
+$result = mysqli_query($conn, "SELECT * FROM books WHERE id=$id");
 $book = mysqli_fetch_assoc($result);
 
 if (!$book) {
-    die("Buku tidak ditemukan.");
+    echo "<script>alert('Buku tidak ditemukan.'); window.history.back();</script>";
+    exit;
 }
 
-$from_page = isset($_GET['from']) ? $_GET['from'] : '';
+// LOGIKA UPDATE RIWAYAT: Selalu perbarui waktu baca ke sekarang (NOW)
+// Ini memastikan fitur "Terakhir Dibaca" di history.php selalu akurat
+mysqli_query($conn, "INSERT INTO history (user_id, book_id, read_at) 
+                     VALUES ($user_id, $id, NOW()) 
+                     ON DUPLICATE KEY UPDATE read_at = NOW()");
 
-if ($from_page === 'detail') {
-    $back_url = "detail.php?id=$id";
-} elseif ($_SESSION['role'] == 'ADMIN') {
-    $back_url = "dashboard-admin.php" . ($from_page ? "?page=$from_page" : "");
-} elseif ($_SESSION['role'] == 'PENERBIT') {
-    $back_url = "dashboard-publisher.php";
-} else {
-    $back_url = "detail.php?id=$id";
+// Jika tipe artikel/link, langsung arahkan ke link tersebut
+if ($book['type'] == 'ARTICLE' && !empty($book['link'])) {
+    header("Location: " . $book['link']);
+    exit;
 }
 
-if ($_SESSION['role'] == 'USER') {
-    mysqli_query($conn, "INSERT IGNORE INTO history (user_id, book_id) VALUES ($user_id, $id)");
-}
+// Tentukan link kembali dinamis
+$back_link = 'dashboard-user.php';
+if ($role == 'PENERBIT') $back_link = 'dashboard-publisher.php';
+if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
+
+// Cek keberadaan file PDF
+$file_path = '../uploads/books/' . $book['file_path'];
+$file_exists = (!empty($book['file_path']) && file_exists($file_path));
 ?>
 
 <!DOCTYPE html>
@@ -45,57 +52,76 @@ if ($_SESSION['role'] == 'USER') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Membaca: <?= htmlspecialchars($book['title']) ?> - E-Library</title>
+    <title>Membaca: <?= htmlspecialchars($book['title']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Menyesuaikan tinggi viewer agar memenuhi layar dikurangi tinggi header */
+        .viewer-container {
+            height: calc(100vh - 64px);
+        }
+    </style>
 </head>
 
-<body class="bg-gray-900 h-screen flex flex-col overflow-hidden">
+<body class="bg-gray-900 overflow-hidden">
 
-    <!-- Top Navigation -->
-    <header class="bg-gray-800 text-white p-4 flex justify-between items-center border-b border-gray-700 z-10">
+    <!-- HEADER / NAVIGATION BAR -->
+    <header class="h-16 bg-blue-300 border-b flex items-center justify-between px-4 lg:px-8 shadow-sm z-50 relative">
         <div class="flex items-center gap-4">
-            <a href="<?= $back_url ?>" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition font-bold text-sm">
-                <span>⬅️</span> Kembali
+            <a href="javascript:history.back()" class="p-2 hover:bg-gray-100 rounded-full transition text-gray-600 flex items-center gap-2 group">
+                <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+                <span class="hidden sm:inline font-medium">Kembali</span>
             </a>
-            <div class="hidden md:block">
-                <h1 class="text-sm font-bold truncate max-w-md"><?= htmlspecialchars($book['title']) ?></h1>
-                <p class="text-[10px] text-gray-400">Mode Membaca Digital</p>
+            <div class="h-8 w-[1px] bg-gray-200 hidden sm:block"></div>
+            <div class="flex flex-col">
+                <h1 class="text-sm font-bold text-gray-900 line-clamp-1 max-w-[200px] md:max-w-md">
+                    <?= htmlspecialchars($book['title']) ?>
+                </h1>
+                <p class="text-[10px] text-gray-600 uppercase font-black tracking-widest leading-none">
+                    <?= $book['type'] ?> • <?= htmlspecialchars($book['author']) ?>
+                </p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <span class="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded"><?= $book['type'] ?></span>
+        <div class="flex items-center gap-3">
+            <a href="detail.php?id=<?= $id ?>" class="p-2 text-gray-500 hover:text-blue-600 transition" title="Info Buku">
+                <i data-lucide="info" class="w-5 h-5"></i>
+            </a>
         </div>
     </header>
 
-    <!-- Reader Container -->
-    <main class="flex-1 bg-gray-500 relative">
-        <?php if (!empty($book['file_path'])): ?>
-            <!-- Viewer PDF menggunakan stream_file.php agar file di folder uploads terlindungi -->
+    <!-- VIEWER AREA -->
+    <main class="viewer-container w-full bg-gray-800 flex items-center justify-center">
+        <?php if ($file_exists): ?>
+            <!-- Menggunakan Iframe untuk menampilkan PDF agar UI HTML tetap terlihat -->
             <iframe
-                src="stream_file.php?id=<?= $id ?>"
+                src="<?= $file_path ?>#toolbar=1&navpanes=0&scrollbar=1"
                 class="w-full h-full border-none"
-                title="PDF Viewer"></iframe>
-        <?php elseif (!empty($book['link'])): ?>
-            <!-- Jika berupa link eksternal -->
-            <div class="flex flex-col items-center justify-center h-full text-white bg-gray-800 p-8 text-center">
-                <div class="text-5xl mb-4">🔗</div>
-                <h2 class="text-xl font-bold mb-2">Buku ini tersedia di platform eksternal</h2>
-                <p class="text-gray-400 mb-6 max-w-sm">Klik tombol di bawah untuk membuka sumber asli buku ini.</p>
-                <a href="<?= htmlspecialchars($book['link']) ?>" target="_blank" class="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-full font-bold transition">Buka Tautan Eksternal</a>
-            </div>
+                title="PDF Viewer">
+            </iframe>
         <?php else: ?>
-            <div class="flex items-center justify-center h-full text-white">
-                <p>File tidak tersedia atau sedang bermasalah.</p>
+            <div class="text-center p-8 bg-gray-700 rounded-2xl border border-gray-600 shadow-xl max-w-sm mx-4">
+                <div class="w-16 h-16 bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="file-warning" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-white font-bold text-xl mb-2">File Tidak Ditemukan</h2>
+                <p class="text-gray-400 text-sm mb-6">Maaf, file PDF untuk buku ini tidak tersedia atau telah dihapus dari server.</p>
+                <a href="<?= $back_link ?>" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold transition">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Katalog
+                </a>
             </div>
         <?php endif; ?>
     </main>
 
-    <!-- Footer Status -->
-    <footer class="bg-gray-800 p-2 text-center text-[10px] text-gray-500">
-        © <?= date('Y') ?> E-Library Digital System - Menjaga Privasi & Keamanan Konten
-    </footer>
+    <script>
+        // Inisialisasi ikon Lucide
+        lucide.createIcons();
 
+        // Mencegah klik kanan untuk keamanan dasar (opsional)
+        /*
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        */
+    </script>
 </body>
 
 </html>
