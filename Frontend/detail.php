@@ -38,7 +38,8 @@ if (isset($_POST['request_publisher']) && $role == 'USER') {
 }
 
 // --- LOGIKA SAVE/UNSAVE BOOK ---
-$msg_save = '';
+$msg_action = ''; // Variabel pesan gabungan untuk Save & Like
+
 $check_save = mysqli_query($conn, "SELECT id FROM saved_books WHERE user_id=$user_id AND book_id=$id");
 $is_saved = (mysqli_num_rows($check_save) > 0);
 
@@ -46,11 +47,33 @@ if (isset($_POST['toggle_save'])) {
     if ($is_saved) {
         mysqli_query($conn, "DELETE FROM saved_books WHERE user_id=$user_id AND book_id=$id");
         $is_saved = false;
-        $msg_save = "Buku dihapus dari koleksi.";
+        $msg_action = "Buku dihapus dari koleksi.";
     } else {
         mysqli_query($conn, "INSERT INTO saved_books (user_id, book_id) VALUES ($user_id, $id)");
         $is_saved = true;
-        $msg_save = "Buku berhasil disimpan ke koleksi!";
+        $msg_action = "Buku berhasil disimpan ke koleksi!";
+    }
+}
+
+// --- LOGIKA LIKE/UNLIKE BOOK ---
+$check_like = mysqli_query($conn, "SELECT id FROM book_likes WHERE user_id=$user_id AND book_id=$id");
+$is_liked = (mysqli_num_rows($check_like) > 0);
+
+// Hitung Total Likes Awal
+$q_count_likes = mysqli_query($conn, "SELECT COUNT(*) as total FROM book_likes WHERE book_id=$id");
+$total_likes = mysqli_fetch_assoc($q_count_likes)['total'];
+
+if (isset($_POST['toggle_like'])) {
+    if ($is_liked) {
+        mysqli_query($conn, "DELETE FROM book_likes WHERE user_id=$user_id AND book_id=$id");
+        $is_liked = false;
+        $total_likes--; // Kurangi visual count
+        $msg_action = "Anda batal menyukai buku ini.";
+    } else {
+        mysqli_query($conn, "INSERT INTO book_likes (user_id, book_id) VALUES ($user_id, $id)");
+        $is_liked = true;
+        $total_likes++; // Tambah visual count
+        $msg_action = "Anda menyukai buku ini!";
     }
 }
 
@@ -104,9 +127,9 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
 <body class="bg-gray-50 font-sans">
 
-    <?php if ($msg_save): ?>
-        <div onclick="this.remove()" class="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2">
-            <i data-lucide="check-circle" class="w-5 h-5"></i> <?= $msg_save ?>
+    <?php if ($msg_action): ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2 border border-gray-700">
+            <i data-lucide="bell" class="w-5 h-5 text-yellow-400"></i> <?= $msg_action ?>
         </div>
     <?php endif; ?>
 
@@ -174,7 +197,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                             </form>
                         <?php else: ?>
                             <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center flex items-center justify-center gap-2">
-                                <i data-lucide="hourglass" class="w-4 h-4"></i> Menunggu Konfirmasi Penerbit
+                                <i data-lucide="hourglass" class="w-4 h-4"></i> Menunggu Konfirmasi
                             </div>
                         <?php endif; ?>
                     </div>
@@ -211,6 +234,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="flex flex-col md:flex-row">
+                        <!-- KOLOM KIRI: Cover & Action Buttons -->
                         <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-6 md:p-8 border-r border-gray-100 flex flex-col items-center">
                             <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6">
                                 <?php if ($hasCover): ?>
@@ -223,7 +247,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                 <?php endif; ?>
                             </div>
 
-                            <!-- TOMBOL ACTION (LOGIKA BARU) -->
                             <div class="w-full flex flex-col gap-3">
                                 <?php if ($book['type'] == 'ARTICLE' && !empty($book['link'])): ?>
                                     <!-- Tipe Artikel: Buka Link -->
@@ -241,19 +264,33 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     </button>
                                 <?php endif; ?>
 
-                                <!-- Tombol Simpan -->
-                                <form method="POST" class="w-full">
-                                    <button type="submit" name="toggle_save" class="w-full py-3 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300' ?> font-bold rounded-lg transition flex items-center justify-center gap-2">
-                                        <?php if ($is_saved): ?>
-                                            <i data-lucide="bookmark-minus" class="w-5 h-5"></i> Tersimpan
-                                        <?php else: ?>
-                                            <i data-lucide="bookmark-plus" class="w-5 h-5"></i> Simpan
-                                        <?php endif; ?>
-                                    </button>
-                                </form>
+                                <!-- Tombol Like & Simpan (Grid Layout) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <!-- Tombol LIKE -->
+                                    <form method="POST" class="w-full">
+                                        <button type="submit" name="toggle_like" class="w-full h-full py-3 border-2 <?= $is_liked ? 'border-red-400 bg-red-50 text-red-600' : 'border-gray-200 bg-white text-gray-500 hover:border-red-200 hover:text-red-400' ?> font-bold rounded-lg transition flex flex-col items-center justify-center gap-1 group">
+                                            <i data-lucide="heart" class="w-5 h-5 <?= $is_liked ? 'fill-current' : '' ?> group-hover:scale-110 transition-transform"></i>
+                                            <span class="text-xs"><?= $total_likes ?> Like</span>
+                                        </button>
+                                    </form>
+
+                                    <!-- Tombol SIMPAN -->
+                                    <form method="POST" class="w-full">
+                                        <button type="submit" name="toggle_save" class="w-full h-full py-3 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700' ?> font-bold rounded-lg transition flex flex-col items-center justify-center gap-1 group">
+                                            <?php if ($is_saved): ?>
+                                                <i data-lucide="bookmark-minus" class="w-5 h-5 fill-current"></i>
+                                                <span class="text-xs">Disimpan</span>
+                                            <?php else: ?>
+                                                <i data-lucide="bookmark-plus" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                                                <span class="text-xs">Simpan</span>
+                                            <?php endif; ?>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
 
+                        <!-- KOLOM KANAN: Detail Informasi -->
                         <div class="md:w-2/3 lg:w-3/4 p-6 md:p-8 flex flex-col h-full">
                             <div class="flex-1">
                                 <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -262,6 +299,9 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     </span>
                                     <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
                                         Tahun: <?= $book['year'] ?>
+                                    </span>
+                                    <span class="px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full border border-red-100 flex items-center gap-1">
+                                        <i data-lucide="heart" class="w-3 h-3 fill-current"></i> <?= $total_likes ?>
                                     </span>
                                 </div>
 

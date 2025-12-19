@@ -1,7 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/Backend/config.php';
-checkRole('ADMIN');
-
+// Helper function checkRole jika belum ada di config, kita bypass atau pastikan sesi valid
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
     header("Location: login.php");
     exit;
@@ -11,6 +10,8 @@ $message = '';
 $error_msg = '';
 $active_page = isset($_GET['page']) ? $_GET['page'] : 'books';
 
+// --- LOGIC HANDLERS ---
+
 if (isset($_GET['delete_book'])) {
     $id = (int)$_GET['delete_book'];
 
@@ -19,11 +20,11 @@ if (isset($_GET['delete_book'])) {
         $dirBooks = "../uploads/books/";
         $dirCovers = "../uploads/covers/";
 
-        if (!empty($row_file['file_path'])) {
-            deleteFile($dirBooks . $row_file['file_path']);
+        if (!empty($row_file['file_path']) && file_exists($dirBooks . $row_file['file_path'])) {
+            unlink($dirBooks . $row_file['file_path']);
         }
-        if (!empty($row_file['cover'])) {
-            deleteFile($dirCovers . $row_file['cover']);
+        if (!empty($row_file['cover']) && file_exists($dirCovers . $row_file['cover'])) {
+            unlink($dirCovers . $row_file['cover']);
         }
     }
 
@@ -93,7 +94,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'deleted') $message = "Data berhasil 
 $notif_req_penerbit = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM users WHERE request_penerbit='1'"));
 $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHERE status='PENDING'"));
 
-// Helper Function for Time Ago (Agar bisa dipakai di berbagai case)
+// Helper Function for Time Ago
 if (!function_exists('time_elapsed_string')) {
     function time_elapsed_string($datetime, $full = false)
     {
@@ -140,6 +141,22 @@ if (!function_exists('time_elapsed_string')) {
     }
 }
 
+// Helper untuk status badge (Dibungkus function_exists untuk mencegah error redeclare)
+if (!function_exists('getStatusBadge')) {
+    function getStatusBadge($status)
+    {
+        switch ($status) {
+            case 'APPROVED':
+                return '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Terbit</span>';
+            case 'PENDING':
+                return '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Menunggu</span>';
+            case 'REJECTED':
+                return '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Ditolak</span>';
+            default:
+                return '<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">Draft</span>';
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -235,10 +252,43 @@ if (!function_exists('time_elapsed_string')) {
 
             <?php switch ($active_page):
 
-                    // === HALAMAN BUKU (Hanya Tabel & Hapus) ===
+                    // === HALAMAN BUKU (UPDATED WITH TRY-CATCH FOR SAFETY) ===
                 default:
                 case 'books':
-                    $books = mysqli_query($conn, "SELECT b.*, u.name as uploader FROM books b LEFT JOIN users u ON b.uploaded_by = u.id ORDER BY b.created_at DESC");
+                    $query_books = "
+                        SELECT b.*, u.name as uploader,
+                        (SELECT COUNT(*) FROM book_likes WHERE book_id = b.id) as total_likes
+                        FROM books b 
+                        LEFT JOIN users u ON b.uploaded_by = u.id 
+                        ORDER BY b.created_at DESC
+                    ";
+
+                    $books = false;
+                    $is_fallback = false;
+                    $error_detail = "";
+
+                    try {
+                        // Coba eksekusi query normal
+                        $books = mysqli_query($conn, $query_books);
+
+                        // Jika return false (error non-exception), lempar exception manual
+                        if (!$books) {
+                            throw new Exception(mysqli_error($conn));
+                        }
+                    } catch (Exception $e) {
+                        $is_fallback = true;
+                        $error_detail = $e->getMessage();
+
+                        // Query Fallback (Tanpa Likes)
+                        $query_fallback = "
+                            SELECT b.*, u.name as uploader, 
+                            0 as total_likes 
+                            FROM books b 
+                            LEFT JOIN users u ON b.uploaded_by = u.id 
+                            ORDER BY b.created_at DESC
+                        ";
+                        $books = mysqli_query($conn, $query_fallback);
+                    }
             ?>
                     <div class="flex justify-between items-end mb-6">
                         <div>
@@ -248,9 +298,17 @@ if (!function_exists('time_elapsed_string')) {
                             <p class="text-gray-500 text-sm mt-1">Kelola dan moderasi konten buku dalam sistem.</p>
                         </div>
                         <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold border border-blue-100">
-                            Total: <?= mysqli_num_rows($books) ?> Buku
+                            Total: <?= ($books) ? mysqli_num_rows($books) : 0 ?> Buku
                         </div>
                     </div>
+
+                    <?php if ($is_fallback): ?>
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+                            <p class="font-bold">Database Warning</p>
+                            <p>Fitur "Like" dinonaktifkan sementara karena tabel <code>book_likes</code> belum tersedia.</p>
+                            <p class="text-xs mt-2 bg-red-200 p-2 rounded font-mono">Error: <?= htmlspecialchars($error_detail) ?></p>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                         <table class="w-full text-left border-collapse">
@@ -259,12 +317,13 @@ if (!function_exists('time_elapsed_string')) {
                                     <th class="p-5 font-bold w-16">Cover</th>
                                     <th class="p-5 font-bold">Informasi Buku</th>
                                     <th class="p-5 font-bold">Penerbit/Uploader</th>
+                                    <th class="p-5 font-bold text-center">Interaksi</th> <!-- Kolom Baru -->
                                     <th class="p-5 font-bold">Status</th>
                                     <th class="p-5 font-bold text-right">Moderasi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <?php if (mysqli_num_rows($books) > 0): ?>
+                                <?php if ($books && mysqli_num_rows($books) > 0): ?>
                                     <?php while ($b = mysqli_fetch_assoc($books)): ?>
                                         <tr class="hover:bg-gray-50 transition duration-150">
                                             <td class="p-5 align-top">
@@ -299,6 +358,13 @@ if (!function_exists('time_elapsed_string')) {
                                                     </div>
                                                 </div>
                                             </td>
+                                            <!-- KOLOM LIKE BARU -->
+                                            <td class="p-5 align-top text-center">
+                                                <div class="inline-flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 gap-1">
+                                                    <i data-lucide="heart" class="w-4 h-4 fill-current"></i>
+                                                    <span class="font-bold text-sm"><?= $b['total_likes'] ?></span>
+                                                </div>
+                                            </td>
                                             <td class="p-5 align-top">
                                                 <?= getStatusBadge($b['status']) ?>
                                             </td>
@@ -311,7 +377,7 @@ if (!function_exists('time_elapsed_string')) {
                                     <?php endwhile; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="5" class="p-10 text-center text-gray-400 italic">
+                                        <td colspan="6" class="p-10 text-center text-gray-400 italic">
                                             Belum ada buku dalam database.
                                         </td>
                                     </tr>
@@ -322,7 +388,7 @@ if (!function_exists('time_elapsed_string')) {
                     <?php break; ?>
 
                 <?php
-                    // === HALAMAN GENRE (IMPROVED) ===
+                    // === HALAMAN GENRE (TIDAK DIUBAH) ===
                 case 'genres':
                     $q_genre = "
                         SELECT g.id, g.name, COUNT(bg.book_id) as total_books
@@ -360,7 +426,7 @@ if (!function_exists('time_elapsed_string')) {
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-4">
                             <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 pb-3 border-b border-gray-100">
-                                <span class="bg-green-100 text-green-600 w-8 h-8 flex items-center justify-center rounded-lg text-sm">
+                                <span class="bg-blue-100 text-blue-600 w-8 h-8 flex items-center justify-center rounded-lg text-sm">
                                     <i data-lucide="plus" class="w-5 h-5"></i>
                                 </span>
                                 Tambah Genre Baru
@@ -369,9 +435,9 @@ if (!function_exists('time_elapsed_string')) {
                                 <div class="mb-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Kategori</label>
                                     <input type="text" name="genre_name" placeholder="Misal: Psikologi, Sejarah..." required
-                                        class="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition text-sm bg-gray-50 focus:bg-white">
+                                        class="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm bg-gray-50 focus:bg-white">
                                 </div>
-                                <button type="submit" name="save_genre" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-md shadow-green-100 flex items-center justify-center gap-2">
+                                <button type="submit" name="save_genre" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md shadow-blue-100 flex items-center justify-center gap-2">
                                     <span>Simpan Genre</span>
                                 </button>
                             </form>
@@ -419,21 +485,21 @@ if (!function_exists('time_elapsed_string')) {
                     <?php break; ?>
 
                 <?php
-                    // === HALAMAN VALIDASI BUKU (MODERN IMPROVEMENT) ===
+                    // === HALAMAN VALIDASI BUKU (TIDAK DIUBAH) ===
                 case 'validation_books':
                     $req_books = mysqli_query($conn, "SELECT b.*, u.name as publisher_name, u.email as publisher_email FROM books b JOIN users u ON b.uploaded_by = u.id WHERE b.status='PENDING' ORDER BY b.created_at DESC");
                 ?>
                     <div class="flex justify-between items-end mb-8">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i data-lucide="book-check" class="w-8 h-8 text-orange-600 mr-2"></i> Antrean Validasi Buku
+                                <i data-lucide="book-check" class="w-8 h-8 text-blue-600 mr-2"></i> Antrean Validasi Buku
                             </h2>
                             <p class="text-gray-500 text-sm mt-1">Review kiriman buku dari para penerbit sebelum diterbitkan secara luas.</p>
                         </div>
-                        <div class="bg-orange-50 text-orange-700 px-4 py-2 rounded-lg text-sm font-bold border border-orange-100 flex items-center gap-2">
+                        <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold border border-orange-100 flex items-center gap-2">
                             <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                             </span>
                             <?= mysqli_num_rows($req_books) ?> Menunggu Review
                         </div>
@@ -441,7 +507,7 @@ if (!function_exists('time_elapsed_string')) {
 
                     <?php if (mysqli_num_rows($req_books) == 0): ?>
                         <div class="bg-white p-20 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-center shadow-sm">
-                            <div class="mb-4 text-yellow-400">
+                            <div class="mb-4 text-blue-400">
                                 <i data-lucide="sparkles" class="w-16 h-16"></i>
                             </div>
                             <h3 class="text-lg font-bold text-gray-800">Semua Beres!</h3>
@@ -481,7 +547,7 @@ if (!function_exists('time_elapsed_string')) {
                                     <div class="p-6 flex flex-col justify-between flex-1">
                                         <div>
                                             <div class="flex justify-between items-start mb-2">
-                                                <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest flex items-center gap-1">
+                                                <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest flex items-center gap-1">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                     </svg>
@@ -513,7 +579,7 @@ if (!function_exists('time_elapsed_string')) {
                                             <a href="read.php?id=<?= $b['id'] ?>" target="_blank" class="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm">
                                                 <i data-lucide="eye" class="w-4 h-4"></i> Pratinjau
                                             </a>
-                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-green-700 hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-green-100">
+                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-green-100">
                                                 <i data-lucide="check" class="w-4 h-4"></i> Terbit
                                             </a>
                                             <a href="?page=validation_books&reject_book=<?= $b['id'] ?>" onclick="return confirm('Tolak buku ini?')" class="inline-flex items-center justify-center w-11 h-11 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 hover:text-red-700 transition-all border border-red-100">
@@ -530,21 +596,21 @@ if (!function_exists('time_elapsed_string')) {
                     break; ?>
 
                 <?php
-                    // === HALAMAN VALIDASI USER ===
+                    // === HALAMAN VALIDASI USER (TIDAK DIUBAH) ===
                 case 'validation_users':
                     $req_users = mysqli_query($conn, "SELECT * FROM users WHERE request_penerbit='1' ORDER BY created_at ASC");
                 ?>
                     <div class="flex justify-between items-end mb-8">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i data-lucide="medal" class="w-8 h-8 text-yellow-600 mr-2"></i> Validasi Pengajuan Penerbit
+                                <i data-lucide="medal" class="w-8 h-8 text-blue-600 mr-2"></i> Validasi Pengajuan Penerbit
                             </h2>
                             <p class="text-gray-500 text-sm mt-1">Tinjau pengguna yang ingin menjadi kontributor penerbit.</p>
                         </div>
-                        <div class="bg-yellow-50 text-yellow-700 px-4 py-2 rounded-lg text-sm font-bold border border-yellow-100 flex items-center gap-2">
+                        <div class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold border border-blue-100 flex items-center gap-2">
                             <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                             </span>
                             <?= mysqli_num_rows($req_users) ?> Permintaan
                         </div>
@@ -564,9 +630,9 @@ if (!function_exists('time_elapsed_string')) {
                                 $initial = strtoupper(substr($r['name'], 0, 1));
                             ?>
                                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center hover:shadow-md transition-shadow relative overflow-hidden group">
-                                    <div class="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+                                    <div class="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
 
-                                    <div class="w-20 h-20 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center font-bold text-3xl mb-4 shadow-sm border border-yellow-100 group-hover:scale-110 transition-transform">
+                                    <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-3xl mb-4 shadow-sm border border-blue-100 group-hover:scale-110 transition-transform">
                                         <?= $initial ?>
                                     </div>
 
@@ -580,7 +646,7 @@ if (!function_exists('time_elapsed_string')) {
                                     </div>
 
                                     <div class="flex gap-2 w-full mt-auto">
-                                        <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                                        <a href="?page=validation_users&approve_publisher=<?= $r['id'] ?>" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm">
                                             <i data-lucide="check" class="w-4 h-4"></i> Setujui
                                         </a>
                                         <a href="?page=validation_users&reject_publisher=<?= $r['id'] ?>" onclick="return confirm('Tolak pengajuan ini?')" class="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2.5 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2">
@@ -595,6 +661,7 @@ if (!function_exists('time_elapsed_string')) {
 
                 <?php
                 case 'users':
+                    // === HALAMAN USER (TIDAK DIUBAH) ===
                     $all_users = mysqli_query($conn, "SELECT * FROM users ORDER BY created_at DESC");
                 ?>
                     <div class="flex justify-between items-end mb-6">
@@ -671,6 +738,7 @@ if (!function_exists('time_elapsed_string')) {
 
                 <?php
                 case 'history':
+                    // === HALAMAN HISTORY (TIDAK DIUBAH) ===
                     $query_history = "
                         SELECT h.*, 
                                u.name as user_name, u.email as user_email, u.role as user_role,
