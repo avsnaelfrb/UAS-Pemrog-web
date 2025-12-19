@@ -219,7 +219,7 @@ $books = mysqli_query($conn, $sql);
                                     <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
 
                                     <div class="mt-auto pt-4 border-t border-gray-100">
-                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition">
+                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-blue-500 text-gray-100 hover:bg-blue-700 rounded-lg font-medium transition">
                                             Lihat Buku
                                         </a>
                                     </div>
