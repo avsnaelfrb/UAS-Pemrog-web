@@ -14,6 +14,8 @@ if ($_SESSION['role'] == 'PENERBIT') {
 
 $user_id = $_SESSION['user_id'];
 $message = '';
+$name = $_SESSION['name'];
+
 
 if (isset($_POST['request_publisher'])) {
     mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$user_id");
@@ -41,7 +43,7 @@ $sql = "
     WHERE b.status = 'APPROVED' 
 ";
 
-            if ($search) {
+if ($search) {
     $sql .= " AND (title LIKE '%$search%' OR author LIKE '%$search%')";
 }
 if ($filter_type) {
@@ -64,6 +66,7 @@ $type_map = [
     'ARTICLE' => '<div class="flex items-center gap-2"><i data-lucide="newspaper" class="w-4 h-4"></i> Artikel</div>'
 ];
 $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : $type_map[''];
+$bgGradient = 'from-blue-800 to-indigo-900';
 ?>
 
 <!DOCTYPE html>
@@ -194,6 +197,14 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <a href="profile.php" class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm border border-blue-200">
                     <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
                 </a>
+            </div>
+
+            <div class="mb-8 lg:mb-8 bg-gradient-to-r <?= $bgGradient ?> text-white rounded-2xl p-6 lg:p-10 shadow-lg relative overflow-hidden">
+                <div class="relative z-10">
+                    <h2 class="text-2xl lg:text-4xl font-bold mb-2">Selamat Datang Kembali, <?= htmlspecialchars($name) ?>!</h2>
+                    <p class="text-<?= $themeClass ?>-100 max-w-lg text-sm lg:text-base">Temukan bacaan menarik berdasarkan genre yang ingin kamu cari.</p>
+                </div>
+                <i data-lucide="sparkles" class="absolute -right-6 -bottom-6 w-32 h-32 lg:w-48 lg:h-48 text-white opacity-10 rotate-12"></i>
             </div>
 
             <!-- SEARCH & FILTER SECTION -->
