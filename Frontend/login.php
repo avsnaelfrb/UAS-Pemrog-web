@@ -5,8 +5,7 @@ require_once dirname(__DIR__) . '/Backend/config.php';
 if (isset($_SESSION['user_id'])) {
     $role = $_SESSION['role'];
     if ($role == 'ADMIN') redirect('dashboard-admin.php');
-    else if ($role == 'PENERBIT') redirect('dashboard-publisher.php');
-    else redirect('dashboard-user.php');
+    else redirect('home.php');
 }
 
 $error = '';
@@ -28,8 +27,8 @@ if (isset($_POST['login'])) {
 
             // Redirect sesuai role
             if ($_SESSION['role'] == 'ADMIN') redirect('dashboard-admin.php');
-            else if ($_SESSION['role'] == 'PENERBIT') redirect('dashboard-publisher.php');
-            else redirect('dashboard-user.php');
+            else if ($_SESSION['role'] == 'PENERBIT') redirect('home.php');
+            else redirect('home.php');
         } else {
             $error = "Password salah!";
         }

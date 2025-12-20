@@ -124,11 +124,9 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             </div>
 
             <nav class="p-4 space-y-2">
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] == 'ADMIN'): ?>
-                    <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
-                        <i data-lucide="zap" class="w-5 h-5"></i> Admin Panel
-                    </a>
-                <?php endif; ?>
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i> Home
+                </a>
 
                 <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog

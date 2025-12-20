@@ -202,28 +202,31 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
                 </div>
 
                 <nav class="p-4 space-y-2">
+                    <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                        <i data-lucide="home" class="w-5 h-5"></i> Home
+                    </a>
                     <?php $dash_link = ($role == 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php'; ?>
-                    <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
                         <i data-lucide="library" class="w-5 h-5"></i> Katalog
                     </a>
 
                     <!-- MENU KHUSUS PENERBIT (Updated) -->
                     <?php if ($role == 'PENERBIT'): ?>
-                        <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                        <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
                             <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
                         </a>
 
-                        <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                        <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
                             <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
                         </a>
                     <?php endif; ?>
 
-                    <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
                         <i data-lucide="history" class="w-5 h-5"></i> Riwayat
                     </a>
 
                     <!-- Menu Koleksi Baru -->
-                    <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> rounded-lg font-medium transition">
+                    <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
                         <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
                     </a>
 

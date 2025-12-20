@@ -104,6 +104,9 @@ if (!$my_books) {
             </div>
 
             <nav class="p-4 space-y-2">
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i> Home
+                </a>
                 <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
