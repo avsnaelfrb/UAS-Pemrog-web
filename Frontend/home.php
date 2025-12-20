@@ -27,7 +27,7 @@ $bgGradient = ($role === 'PENERBIT') ? 'from-purple-800 to-indigo-900' : 'from-b
 
 // 1. QUERY: BUKU PALING POPULER (Updated with genres)
 $sql_popular = "
-    SELECT b.*, COUNT(bl.id) as total_likes, 
+    SELECT b.*, COUNT(DISTINCT bl.id) as total_likes, 
     GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names
     FROM books b 
     LEFT JOIN book_likes bl ON b.id = bl.book_id 
@@ -129,7 +129,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
             </div>
 
             <nav class="p-4 space-y-2">
-                <a href="home.php" class="flex items-center gap-3 px-4 py-3 bg-<?= $themeClass ?>-50 text-<?= $themeClass ?>-700 rounded-lg font-bold border border-<?= $themeClass ?>-100">
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 bg-<?= $themeClass ?>-50 text-<?= $themeClass ?>-700 rounded-lg font-medium border border-<?= $themeClass ?>-100">
                     <i data-lucide="home" class="w-5 h-5"></i> Home
                 </a>
                 <a href="<?= ($role === 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php' ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-<?= $themeClass ?>-50 hover:text-<?= $themeClass ?>-700 rounded-lg font-medium transition">
@@ -221,7 +221,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
 
                                 <!-- Floating Badges -->
                                 <div class="absolute top-4 left-4 flex flex-col gap-2">
-                                    <span class="px-2.5 py-1 bg-white/90 backdrop-blur text-<?= $themeClass ?>-700 text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
+                                    <span class="px-2.5 py-1 bg-black/60 backdrop-blur text-white text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
                                         <?= $book['type'] ?>
                                     </span>
                                 </div>
@@ -245,7 +245,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
 
                             <div class="p-5 flex flex-col flex-1">
                                 <div class="mb-3">
-                                    <h4 class="font-extrabold text-gray-900 text-base mb-1 line-clamp-2 leading-tight group-hover:text-<?= $themeClass ?>-600 transition-colors" title="<?= $book['title'] ?>">
+                                    <h4 class="font-bold text-gray-900 text-base mb-1 line-clamp-2 leading-tight group-hover:text-<?= $themeClass ?>-600 transition-colors" title="<?= $book['title'] ?>">
                                         <?= $book['title'] ?>
                                     </h4>
                                     <p class="text-xs font-medium text-gray-500 flex items-center gap-1">
@@ -293,7 +293,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
                                 <img src="../uploads/covers/<?= $book['cover'] ?>" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
 
                                 <div class="absolute top-4 left-4 flex flex-col gap-2">
-                                    <span class="px-2.5 py-1 bg-white/90 backdrop-blur text-<?= $themeClass ?>-700 text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
+                                    <span class="px-2.5 py-1 bg-black/60 backdrop-blur text-white text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
                                         For You
                                     </span>
                                 </div>
