@@ -157,12 +157,9 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
             </div>
 
             <nav class="p-4 space-y-2">
-                <?php if ($role == 'ADMIN'): ?>
-                    <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
-                        <i data-lucide="zap" class="w-5 h-5"></i> Admin Panel
-                    </a>
-                <?php endif; ?>
-
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i> Home
+                </a>
                 <a href="<?= $back_link ?>" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?> shadow-sm">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
@@ -229,7 +226,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
             <div class="max-w-5xl mx-auto">
                 <a href="<?= $back_link ?>" class="inline-flex items-center text-gray-500 <?= $hover_text ?> mb-6 font-medium transition">
                     <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
-                    Kembali ke Katalog
+                    Kembali
                 </a>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -320,8 +317,8 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                         foreach ($genres as $g):
                                             if (trim($g) == '') continue;
                                         ?>
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 border border-gray-200 gap-1">
-                                                <i data-lucide="tag" class="w-3 h-3 text-gray-400"></i> <?= trim($g) ?>
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium <?= $bg_soft ?> text-<?= $theme ?>-700 border border-gray-200 gap-1">
+                                                <i data-lucide="tag" class="w-3 h-3 text-<?= $theme ?>-800"></i> <?= trim($g) ?>
                                             </span>
                                         <?php endforeach; ?>
                                     </div>

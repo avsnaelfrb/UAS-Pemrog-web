@@ -29,12 +29,15 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
 $filter_type = isset($_GET['type']) ? $_GET['type'] : '';
 $filter_genres = isset($_GET['genres']) ? $_GET['genres'] : [];
 
+// REVISI QUERY: Menambahkan penghitungan Like
 $sql = "
     SELECT b.id, b.title, b.author, b.cover, b.type,
-    GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
+    GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names,
+    COUNT(bl.id) as total_likes
     FROM books b 
     LEFT JOIN book_genres bg ON b.id = bg.book_id 
     LEFT JOIN genres g ON bg.genre_id = g.id 
+    LEFT JOIN book_likes bl ON b.id = bl.book_id
     WHERE b.status = 'APPROVED' 
 ";
 
@@ -93,13 +96,25 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
+
+        /* IMPROVISASI CSS UNTUK CARD MODERN */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-hover-effect:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 font-sans">
 
     <!-- OVERLAY MOBILE -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
 
     <?php if ($message): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-yellow-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2">
@@ -128,7 +143,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <i data-lucide="home" class="w-5 h-5"></i> Home
                 </a>
 
-                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
+                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-bold border border-blue-100">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg font-medium transition">
@@ -273,40 +288,76 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             <?php if (mysqli_num_rows($books) > 0): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                        <div class="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-x1 hover:shadow-lg hover:shadow-blue-100  transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
-                            <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
+                        <!-- KARTU MODERN YANG DISELARASKAN DENGAN HOME.PHP -->
+                        <div class="bg-white rounded-2xl border border-gray-100 shadow-md hover:shadow-lg hover:shadow-blue-100 transition-all duration-300 flex flex-col h-full group card-hover-effect transform hover:-translate-y-2">
+                            <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-2xl">
                                 <?php
                                 $coverPath = '../uploads/covers/' . $book['cover'];
                                 if (!empty($book['cover']) && file_exists($coverPath)):
                                 ?>
-                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                                         <i data-lucide="image-off" class="w-10 h-10 mb-2"></i>
                                         <span class="text-xs">No Cover</span>
                                     </div>
                                 <?php endif; ?>
-                                <div class="absolute inset-0 bg-blue-900 bg-opacity-0 group-hover:bg-opacity-10 transition duration-300"></div>
-                            </div>
-                            <div class="p-4 flex-1 flex flex-col">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div class="text-xs font-semibold text-blue-600 tracking-wide uppercase bg-blue-50 px-2 py-1 w-fit rounded border border-blue-100">
+
+                                <!-- Floating Badge Tipe -->
+                                <div class="absolute top-4 left-4">
+                                    <div class="px-2.5 py-1 bg-white/90 backdrop-blur text-blue-700 text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
                                         <?= $book['type'] ?>
                                     </div>
                                 </div>
 
-                                <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2 group-hover:text-blue-700 transition" title="<?= htmlspecialchars($book['title']) ?>"><?= htmlspecialchars($book['title']) ?></h3>
-                                <p class="text-sm text-gray-500 mb-3 "><?= htmlspecialchars($book['author']) ?></p>
-
-                                <div class="flex flex-wrap gap-1 mb-4">
-                                    <?php foreach (explode(',', $book['genre_names']) as $gn): if (trim($gn) == '') continue; ?>
-                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200 group-hover:border-blue-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition"><?= trim($gn) ?></span>
-                                    <?php endforeach; ?>
+                                <!-- REVISI: Tambahkan Badge Jumlah Like di Card -->
+                                <div class="absolute bottom-4 left-4">
+                                    <span class="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600 text-white text-[11px] font-bold rounded-full shadow-lg">
+                                        <i data-lucide="heart" class="w-3.5 h-3.5 fill-current"></i>
+                                        <?= number_format($book['total_likes']) ?>
+                                    </span>
                                 </div>
 
-                                <div class="mt-auto pt-4 border-t border-gray-100">
-                                    <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm hover:shadow-md">
-                                        Lihat Detail
+                                <!-- Overlay tipis saat hover -->
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <a href="detail.php?id=<?= $book['id'] ?>">
+                                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-xl transform scale-50 group-hover:scale-100 transition-transform duration-300">
+                                            <i data-lucide="eye" class="w-6 h-6"></i>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="p-5 flex flex-col flex-1">
+                                <div class="mb-3">
+                                    <h3 class="font-extrabold text-gray-900 text-base mb-1 leading-tight line-clamp-2 group-hover:text-blue-700 transition-colors" title="<?= htmlspecialchars($book['title']) ?>">
+                                        <?= htmlspecialchars($book['title']) ?>
+                                    </h3>
+                                    <p class="text-xs font-medium text-gray-500 flex items-center gap-1">
+                                        <i data-lucide="user" class="w-3 h-3"></i> <?= htmlspecialchars($book['author']) ?>
+                                    </p>
+                                </div>
+
+                                <!-- Genre Badges -->
+                                <div class="flex flex-wrap gap-1.5 mb-5 mt-auto">
+                                    <?php
+                                    if ($book['genre_names']) {
+                                        $genres = explode(',', $book['genre_names']);
+                                        $displayGenres = array_slice($genres, 0, 2);
+                                        foreach ($displayGenres as $gn) {
+                                            if (trim($gn) == '') continue;
+                                            echo '<span class="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-bold rounded-md border border-gray-200 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-all">' . trim($gn) . '</span>';
+                                        }
+                                        if (count($genres) > 2) {
+                                            echo '<span class="text-[10px] text-gray-400 font-bold ml-1">+' . (count($genres) - 2) . '</span>';
+                                        }
+                                    }
+                                    ?>
+                                </div>
+
+                                <div class="mt-auto border-t border-gray-50">
+                                    <a href="detail.php?id=<?= $book['id'] ?>" class="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-blue-100 group-hover:shadow-lg">
+                                        Lihat Detail <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                                     </a>
                                 </div>
                             </div>
@@ -332,9 +383,11 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
             } else {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
+                document.body.style.overflow = 'auto';
             }
         }
 
@@ -376,8 +429,6 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
         function selectType(value, label) {
             document.getElementById('typeInput').value = value;
-            // Karena label berisi HTML icon, kita gunakan innerHTML, tapi perlu decode entities jika label dari PHP sudah di encode.
-            // Di sini kita terima raw HTML string dari PHP array di atas.
             document.getElementById('typeLabel').innerHTML = label;
             closeTypeDropdown();
         }
