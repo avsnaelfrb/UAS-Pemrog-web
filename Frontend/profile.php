@@ -169,7 +169,7 @@ $count_saved = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total 
 
                 <?php if ($role == 'USER'): ?>
                     <div class="pt-4 mt-4 border-t border-gray-200">
-                        <?php if ($current_user['request_penerbit'] == '0'): ?>
+                        <?php if ($user['request_penerbit'] == '0'): ?>
                             <form method="POST">
                                 <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg font-medium transition duration-200">
                                     <i data-lucide="pen-tool" class="w-5 h-5"></i> Jadi Penerbit
@@ -266,21 +266,21 @@ $count_saved = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total 
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nama Lengkap</label>
                                     <div class="relative">
                                         <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
-                                        <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
+                                        <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nomor Induk (NIM/NIP)</label>
                                     <div class="relative">
                                         <i data-lucide="credit-card" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
-                                        <input type="text" name="nim" value="<?= htmlspecialchars($user['nim']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
+                                        <input type="text" name="nim" value="<?= htmlspecialchars($user['nim']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                                 <div class="md:col-span-2 space-y-2">
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Alamat Email</label>
                                     <div class="relative">
                                         <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
-                                        <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
+                                        <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                             </div>
@@ -303,14 +303,14 @@ $count_saved = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total 
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password Saat Ini</label>
                                     <div class="relative">
                                         <i data-lucide="key" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
-                                        <input type="password" name="old_password" placeholder="••••••••" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-100 focus:bg-white outline-none transition-all font-medium">
+                                        <input type="password" name="old_password" placeholder="••••••••" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 focus:ring-red-100 focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                                 <div class="space-y-2">
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password Baru</label>
                                     <div class="relative">
                                         <i data-lucide="shield-plus" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
-                                        <input type="password" name="password" placeholder="Minimal 6 karakter" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-100 focus:bg-white outline-none transition-all font-medium">
+                                        <input type="password" name="password" placeholder="Minimal 6 karakter" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-1 focus:ring-green-100 focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                             </div>
