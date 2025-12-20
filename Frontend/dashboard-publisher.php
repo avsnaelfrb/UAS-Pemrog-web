@@ -61,7 +61,12 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
     <title>Dashboard Penerbit - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
         .genre-scroll::-webkit-scrollbar {
             width: 6px;
         }
@@ -92,7 +97,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50">
 
     <div class="flex min-h-screen">
         <!-- Sidebar Penerbit -->
