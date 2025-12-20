@@ -104,7 +104,11 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
     <title>Upload Karya - Publisher</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
@@ -128,7 +132,7 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans text-gray-800">
+<body class="bg-gray-50">
 
     <!-- NOTIFIKASI -->
     <?php if ($message): ?>
