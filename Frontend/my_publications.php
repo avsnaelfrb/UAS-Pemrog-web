@@ -65,7 +65,11 @@ $current_user = mysqli_fetch_assoc($u_res);
     <title>Terbitan Saya - Publisher</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
@@ -88,7 +92,7 @@ $current_user = mysqli_fetch_assoc($u_res);
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans text-gray-800">
+<body class="bg-gray-50">
 
     <!-- OVERLAY MOBILE -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
