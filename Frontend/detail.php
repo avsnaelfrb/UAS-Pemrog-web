@@ -38,7 +38,7 @@ if (isset($_POST['request_publisher']) && $role == 'USER') {
 }
 
 // --- LOGIKA SAVE/UNSAVE BOOK ---
-$msg_action = ''; // Variabel pesan gabungan untuk Save & Like
+$msg_action = '';
 
 $check_save = mysqli_query($conn, "SELECT id FROM saved_books WHERE user_id=$user_id AND book_id=$id");
 $is_saved = (mysqli_num_rows($check_save) > 0);
@@ -59,20 +59,20 @@ if (isset($_POST['toggle_save'])) {
 $check_like = mysqli_query($conn, "SELECT id FROM book_likes WHERE user_id=$user_id AND book_id=$id");
 $is_liked = (mysqli_num_rows($check_like) > 0);
 
-// Hitung Total Likes Awal
-$q_count_likes = mysqli_query($conn, "SELECT COUNT(*) as total FROM book_likes WHERE book_id=$id");
+// Hitung Total Likes Awal (Menggunakan DISTINCT untuk akurasi)
+$q_count_likes = mysqli_query($conn, "SELECT COUNT(DISTINCT id) as total FROM book_likes WHERE book_id=$id");
 $total_likes = mysqli_fetch_assoc($q_count_likes)['total'];
 
 if (isset($_POST['toggle_like'])) {
     if ($is_liked) {
         mysqli_query($conn, "DELETE FROM book_likes WHERE user_id=$user_id AND book_id=$id");
         $is_liked = false;
-        $total_likes--; // Kurangi visual count
+        $total_likes--;
         $msg_action = "Anda batal menyukai buku ini.";
     } else {
         mysqli_query($conn, "INSERT INTO book_likes (user_id, book_id) VALUES ($user_id, $id)");
         $is_liked = true;
-        $total_likes++; // Tambah visual count
+        $total_likes++;
         $msg_action = "Anda menyukai buku ini!";
     }
 }
@@ -81,10 +81,10 @@ if (isset($_POST['toggle_like'])) {
 $u_res = mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id");
 $current_user = mysqli_fetch_assoc($u_res);
 
-// Ambil Detail Buku (Termasuk kolom link)
+// Ambil Detail Buku
 $query = "
     SELECT b.*, 
-    GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names,
+    GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names,
     CASE WHEN file_path IS NOT NULL AND LENGTH(file_path) > 0 THEN 1 ELSE 0 END as file_exists
     FROM books b 
     LEFT JOIN book_genres bg ON b.id = bg.book_id 
@@ -103,7 +103,7 @@ if (!$book) {
 $coverPath = '../uploads/covers/' . $book['cover'];
 $hasCover = (!empty($book['cover']) && file_exists($coverPath));
 
-// Link Kembali Dinamis
+// Fallback Link Kembali (Jika history tidak tersedia)
 $back_link = 'dashboard-user.php';
 if ($role == 'PENERBIT') $back_link = 'dashboard-publisher.php';
 if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
@@ -118,14 +118,19 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
     <title>Detail: <?= htmlspecialchars($book['title']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans';
+        }
+
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50">
 
     <?php if ($msg_action): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2 border border-gray-700">
@@ -133,7 +138,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
         </div>
     <?php endif; ?>
 
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
 
     <div class="flex min-h-screen">
 
@@ -157,13 +162,11 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
             </div>
 
             <nav class="p-4 space-y-2">
-                <?php if ($role == 'ADMIN'): ?>
-                    <a href="dashboard-admin.php" class="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition mb-6 ring-2 ring-indigo-200">
-                        <i data-lucide="zap" class="w-5 h-5"></i> Admin Panel
-                    </a>
-                <?php endif; ?>
-
-                <a href="<?= $back_link ?>" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?> shadow-sm">
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i> Home
+                </a>
+                <!-- Link Katalog (Disesuaikan berdasarkan Dashboard role) -->
+                <a href="<?= $back_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> <?= $hover_text ?> rounded-lg font-medium transition">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
 
@@ -187,11 +190,10 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                 </a>
 
                 <?php if ($role == 'USER'): ?>
-                    <!-- TOMBOL REQUEST PENERBIT -->
                     <div class="pt-4 mt-4 border-t border-gray-200">
                         <?php if ($current_user['request_penerbit'] == '0'): ?>
                             <form method="POST">
-                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
+                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg font-medium transition duration-200">
                                     <i data-lucide="pen-tool" class="w-5 h-5"></i> Jadi Penerbit
                                 </button>
                             </form>
@@ -210,6 +212,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
         <!-- MAIN CONTENT -->
         <main class="flex-1 lg:ml-64 p-4 lg:p-8 transition-all duration-300">
+            <!-- Header Mobile -->
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
@@ -217,28 +220,24 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                     </button>
                     <h1 class="font-bold <?= $text_dark ?> text-lg">Detail Buku</h1>
                 </div>
-                <div class="w-8 h-8 <?= $bg_soft ?> rounded-full flex items-center justify-center text-sm border <?= $border_main ?>">
-                    <?php if ($role == 'PENERBIT'): ?>
-                        <i data-lucide="pen-tool" class="w-4 h-4 text-purple-600"></i>
-                    <?php else: ?>
-                        <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
-                    <?php endif; ?>
-                </div>
             </div>
 
             <div class="max-w-5xl mx-auto">
-                <a href="<?= $back_link ?>" class="inline-flex items-center text-gray-500 <?= $hover_text ?> mb-6 font-medium transition">
-                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
-                    Kembali ke Katalog
+                <!-- MODIFIKASI: Tombol Kembali dengan History Back -->
+                <a href="<?= $back_link ?>"
+                    onclick="if(document.referrer.indexOf(window.location.host) !== -1) { history.back(); return false; }"
+                    class="inline-flex items-center text-gray-500 <?= $hover_text ?> mb-6 font-medium transition group">
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                    Kembali
                 </a>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="flex flex-col md:flex-row">
-                        <!-- KOLOM KIRI: Cover & Action Buttons -->
+                        <!-- KOLOM KIRI -->
                         <div class="md:w-1/3 lg:w-1/4 bg-gray-50 p-6 md:p-8 border-r border-gray-100 flex flex-col items-center">
-                            <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6">
+                            <div class="relative w-full aspect-[2/3] rounded-lg shadow-lg overflow-hidden bg-gray-200 mb-6 group">
                                 <?php if ($hasCover): ?>
-                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover">
+                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                                 <?php else: ?>
                                     <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
                                         <i data-lucide="book" class="w-12 h-12 mb-2"></i>
@@ -249,12 +248,10 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
                             <div class="w-full flex flex-col gap-3">
                                 <?php if ($book['type'] == 'ARTICLE' && !empty($book['link'])): ?>
-                                    <!-- Tipe Artikel: Buka Link -->
                                     <a href="<?= htmlspecialchars($book['link']) ?>" target="_blank" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
                                         <i data-lucide="globe" class="w-5 h-5"></i> Buka Artikel
                                     </a>
                                 <?php elseif ($book['file_exists']): ?>
-                                    <!-- Tipe Buku/Jurnal: Buka PDF -->
                                     <a href="read.php?id=<?= $book['id'] ?>" class="w-full py-3 <?= $bg_main ?> <?= $bg_hover ?> text-white font-bold rounded-lg shadow-lg shadow-<?= $theme ?>-200 text-center transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
                                         <i data-lucide="book-open" class="w-5 h-5"></i> Baca Sekarang
                                     </a>
@@ -264,9 +261,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     </button>
                                 <?php endif; ?>
 
-                                <!-- Tombol Like & Simpan (Grid Layout) -->
                                 <div class="grid grid-cols-2 gap-2">
-                                    <!-- Tombol LIKE -->
                                     <form method="POST" class="w-full">
                                         <button type="submit" name="toggle_like" class="w-full h-full py-3 border-2 <?= $is_liked ? 'border-red-400 bg-red-50 text-red-600' : 'border-gray-200 bg-white text-gray-500 hover:border-red-200 hover:text-red-400' ?> font-bold rounded-lg transition flex flex-col items-center justify-center gap-1 group">
                                             <i data-lucide="heart" class="w-5 h-5 <?= $is_liked ? 'fill-current' : '' ?> group-hover:scale-110 transition-transform"></i>
@@ -274,7 +269,6 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                         </button>
                                     </form>
 
-                                    <!-- Tombol SIMPAN -->
                                     <form method="POST" class="w-full">
                                         <button type="submit" name="toggle_save" class="w-full h-full py-3 border-2 <?= $is_saved ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700' ?> font-bold rounded-lg transition flex flex-col items-center justify-center gap-1 group">
                                             <?php if ($is_saved): ?>
@@ -290,7 +284,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                             </div>
                         </div>
 
-                        <!-- KOLOM KANAN: Detail Informasi -->
+                        <!-- KOLOM KANAN -->
                         <div class="md:w-2/3 lg:w-3/4 p-6 md:p-8 flex flex-col h-full">
                             <div class="flex-1">
                                 <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -300,7 +294,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                     <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
                                         Tahun: <?= $book['year'] ?>
                                     </span>
-                                    <span class="px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full border border-red-100 flex items-center gap-1">
+                                    <span class="px-3 py-1 bg-pink-50 text-pink-600 text-xs font-bold rounded-full border border-pink-100 flex items-center gap-1">
                                         <i data-lucide="heart" class="w-3 h-3 fill-current"></i> <?= $total_likes ?>
                                     </span>
                                 </div>
@@ -320,8 +314,8 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
                                         foreach ($genres as $g):
                                             if (trim($g) == '') continue;
                                         ?>
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-50 text-gray-700 border border-gray-200 gap-1">
-                                                <i data-lucide="tag" class="w-3 h-3 text-gray-400"></i> <?= trim($g) ?>
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium <?= $bg_soft ?> text-<?= $theme ?>-700 border border-gray-200 gap-1">
+                                                <i data-lucide="tag" class="w-3 h-3 text-<?= $theme ?>-800"></i> <?= trim($g) ?>
                                             </span>
                                         <?php endforeach; ?>
                                     </div>
@@ -329,7 +323,7 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
 
                                 <div class="prose max-w-none text-gray-700">
                                     <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Sinopsis / Deskripsi</h3>
-                                    <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 text-sm leading-relaxed whitespace-pre-line">
+                                    <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 text-sm leading-relaxed whitespace-pre-line shadow-inner">
                                         <?= !empty($book['description']) ? htmlspecialchars($book['description']) : '<em class="text-gray-400">Tidak ada deskripsi tersedia untuk buku ini.</em>' ?>
                                     </div>
                                 </div>

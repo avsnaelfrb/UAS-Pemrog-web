@@ -169,7 +169,12 @@ if (!function_exists('getStatusBadge')) {
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
         .active-nav {
             background-color: #eff6ff;
             color: #1e40af;
@@ -184,7 +189,7 @@ if (!function_exists('getStatusBadge')) {
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50">
 
     <!-- Sidebar Desktop -->
     <div class="flex min-h-screen">
@@ -341,7 +346,7 @@ if (!function_exists('getStatusBadge')) {
                                             <td class="p-5 align-top">
                                                 <div class="font-bold text-gray-800 text-base mb-1"><?= htmlspecialchars($b['title']) ?></div>
                                                 <div class="flex items-center gap-2 text-xs text-gray-500">
-                                                    <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium"><?= $b['type'] ?></span>
+                                                    <span class="bg-blue-100 px-2 py-0.5 rounded text-blue-600 font-medium"><?= $b['type'] ?></span>
                                                     <span>•</span>
                                                     <span><?= $b['author'] ?></span>
                                                     <span>•</span>
@@ -350,10 +355,10 @@ if (!function_exists('getStatusBadge')) {
                                             </td>
                                             <td class="p-5 align-top">
                                                 <div class="flex items-center gap-2">
-                                                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-500">
+                                                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-500">
                                                         <?= $b['uploaded_by'] ? strtoupper(substr($b['uploader'], 0, 1)) : '?' ?>
                                                     </div>
-                                                    <div class="text-sm">
+                                                    <div class="text-sm text-purple-600">
                                                         <?= $b['uploaded_by'] ? htmlspecialchars($b['uploader']) : '<span class="text-gray-400 italic">System Legacy</span>' ?>
                                                     </div>
                                                 </div>
@@ -554,7 +559,7 @@ if (!function_exists('getStatusBadge')) {
                                                     <?= time_elapsed_string($b['created_at']) ?>
                                                 </span>
                                             </div>
-                                            <h3 class="font-black text-xl text-gray-800 mb-1 leading-tight group-hover:text-blue-600 transition-colors line-clamp-2" title="<?= htmlspecialchars($b['title']) ?>">
+                                            <h3 class="font-bold text-xl text-gray-800 mb-1 leading-tight group-hover:text-blue-600 transition-colors line-clamp-2" title="<?= htmlspecialchars($b['title']) ?>">
                                                 <?= htmlspecialchars($b['title']) ?>
                                             </h3>
                                             <p class="text-sm text-gray-500 font-medium mb-4 italic">Oleh <?= htmlspecialchars($b['author']) ?> (<?= $b['year'] ?>)</p>
@@ -693,7 +698,7 @@ if (!function_exists('getStatusBadge')) {
                                         $roleColor = match ($u['role']) {
                                             'ADMIN' => 'bg-red-100 text-red-800 border-red-200',
                                             'PENERBIT' => 'bg-purple-100 text-purple-800 border-purple-200',
-                                            default => 'bg-gray-100 text-gray-800 border-gray-200'
+                                            default => 'bg-blue-100 text-blue-800 border-blue-200'
                                         };
                                         $avatarColor = match ($u['role']) {
                                             'ADMIN' => 'bg-red-50 text-red-600',
