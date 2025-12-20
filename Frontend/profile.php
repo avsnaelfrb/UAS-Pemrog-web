@@ -11,19 +11,23 @@ $role = $_SESSION['role'];
 $message = '';
 $error = '';
 
+// Pengaturan Tema Dinamis
 $theme = ($role == 'PENERBIT') ? 'purple' : 'blue';
 $bg_soft = "bg-$theme-50";
 $text_main = "text-$theme-700";
+$text_dark = "text-$theme-900";
 $border_main = "border-$theme-100";
 $hover_soft = "hover:bg-$theme-50";
-$btn_main = "bg-$theme-600 hover:bg-$theme-700";
+$btn_main = "bg-$theme-600 hover:bg-$theme-700 shadow-$theme-100";
 $ring_focus = "focus:ring-$theme-500";
 
+// Handle Request Penerbit
 if (isset($_POST['request_publisher'])) {
     mysqli_query($conn, "UPDATE users SET request_penerbit='1' WHERE id=$id");
     $message = "Permintaan dikirim! Tunggu konfirmasi Admin.";
 }
 
+// Handle Update Profile
 if (isset($_POST['update'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $email = mysqli_real_escape_string($conn, $_POST['email']);
@@ -33,7 +37,7 @@ if (isset($_POST['update'])) {
 
     $cek_email = mysqli_query($conn, "SELECT id FROM users WHERE email = '$email' AND id != $id");
     if (mysqli_num_rows($cek_email) > 0) {
-        $error = "Email sudah digunakan!";
+        $error = "Email sudah digunakan oleh akun lain!";
     } else {
         $password_valid = true;
         $hashed_password_baru = '';
@@ -45,7 +49,7 @@ if (isset($_POST['update'])) {
                 $hashed_password_baru = password_hash($password_baru, PASSWORD_DEFAULT);
             } else {
                 $password_valid = false;
-                $error = "Password lama salah!";
+                $error = "Password lama yang Anda masukkan salah!";
             }
         }
 
@@ -56,9 +60,9 @@ if (isset($_POST['update'])) {
 
             if (mysqli_query($conn, $query)) {
                 $_SESSION['name'] = $name;
-                $message = "Profil berhasil diperbarui!";
+                $message = "Profil Anda berhasil diperbarui!";
             } else {
-                $error = "Gagal Update Database.";
+                $error = "Terjadi kesalahan saat memperbarui database.";
             }
         }
     }
@@ -66,7 +70,10 @@ if (isset($_POST['update'])) {
 
 $query_user = mysqli_query($conn, "SELECT * FROM users WHERE id=$id");
 $user = mysqli_fetch_assoc($query_user);
-$genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
+
+// Ambil Statistik Singkat (Opsional untuk Informasi Tambahan)
+$count_history = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM history WHERE user_id=$id"))['total'];
+$count_saved = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FROM saved_books WHERE user_id=$id"))['total'];
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +82,7 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Profil - <?= htmlspecialchars($user['name']) ?></title>
+    <title>Profil Saya - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -83,277 +90,273 @@ $genres_list = mysqli_query($conn, "SELECT * FROM genres ORDER BY name ASC");
             transition: transform 0.3s ease-in-out;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .genre-scroll::-webkit-scrollbar {
-            width: 6px;
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
-    <?php if ($role == 'ADMIN'): ?>
-        <!-- Layout Admin Tetap -->
-        <div class="container mx-auto p-6">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm gap-4">
-                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <i data-lucide="shield-check" class="w-8 h-8 text-blue-800"></i> Admin Panel
-                </h1>
-                <div class="flex flex-wrap gap-2 items-center">
-                    <a href="dashboard-admin.php" class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 text-sm font-medium flex items-center gap-1">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Dashboard
-                    </a>
-                    <a href="logout.php" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm font-medium flex items-center gap-1">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> Logout
-                    </a>
-                </div>
-            </div>
+    <!-- OVERLAY MOBILE -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
 
-            <?php if ($message): ?>
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex items-center gap-2">
-                    <i data-lucide="check-circle" class="w-5 h-5"></i> <?= $message ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($error): ?>
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center gap-2">
-                    <i data-lucide="alert-circle" class="w-5 h-5"></i> <?= $error ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 class="text-xl font-bold mb-6 text-blue-900 border-b pb-2 flex items-center gap-2">
-                    <i data-lucide="settings" class="w-6 h-6"></i> Edit Data Admin
-                </h2>
-                <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Form Fields Admin -->
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1">Nama Lengkap</label>
-                            <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1">NIP / ID</label>
-                            <input type="text" name="nim" value="<?= htmlspecialchars($user['nim']) ?>" required class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                    </div>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-gray-700 font-medium mb-1">Email</label>
-                            <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required class="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-2">
-                            <h3 class="text-sm font-bold text-yellow-800 mb-3 border-b border-yellow-200 pb-1 flex items-center gap-2">
-                                <i data-lucide="lock" class="w-4 h-4"></i> Ganti Password
-                            </h3>
-                            <div class="space-y-3">
-                                <div><label class="block text-gray-700 text-xs font-bold mb-1">Password Lama</label><input type="password" name="old_password" class="w-full border rounded p-2 text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none"></div>
-                                <div><label class="block text-gray-700 text-xs font-bold mb-1">Password Baru</label><input type="password" name="password" class="w-full border rounded p-2 text-sm bg-white focus:ring-2 focus:ring-yellow-400 outline-none"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-span-1 md:col-span-2 flex gap-3 mt-4 border-t pt-4">
-                        <button type="submit" name="update" class="bg-blue-600 text-white px-8 py-2.5 rounded-lg hover:bg-blue-700 font-bold flex-1 flex items-center justify-center gap-2">
-                            <i data-lucide="save" class="w-4 h-4"></i> Simpan
-                        </button>
-                        <a href="dashboard-admin.php" class="bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-300 font-bold flex items-center gap-2">
-                            <i data-lucide="x" class="w-4 h-4"></i> Batal
-                        </a>
-                    </div>
-                </form>
-            </div>
+    <!-- NOTIFIKASI -->
+    <?php if ($message): ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 cursor-pointer animate-bounce flex items-center gap-3 border border-gray-700">
+            <div class="bg-green-500 p-1 rounded-full"><i data-lucide="check" class="w-4 h-4"></i></div>
+            <span class="text-sm font-bold"><?= $message ?></span>
         </div>
+    <?php endif; ?>
 
-    <?php else: ?>
-        <!-- ======================== TAMPILAN USER / PENERBIT ======================== -->
-        <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden bg-blur"></div>
+    <?php if ($error): ?>
+        <div onclick="this.remove()" class="fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 cursor-pointer animate-pulse flex items-center gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+            <span class="text-sm font-bold"><?= $error ?></span>
+        </div>
+    <?php endif; ?>
 
-        <div class="flex min-h-screen">
-            <!-- Sidebar Dinamis -->
-            <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition h-full overflow-y-auto">
-                <div class="p-6 border-b flex flex-col items-center relative">
-                    <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
-                    <div class="w-16 h-16 <?= ($role == 'PENERBIT') ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' ?> rounded-full flex items-center justify-center text-2xl mb-3">
-                        <?php if ($role == 'PENERBIT'): ?>
-                            <i data-lucide="pen-tool" class="w-8 h-8"></i>
+    <div class="flex min-h-screen">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r transform -translate-x-full lg:translate-x-0 sidebar-transition h-full overflow-y-auto">
+            <div class="p-6 border-b flex flex-col items-center relative">
+                <button onclick="toggleSidebar()" class="absolute top-4 right-4 lg:hidden text-gray-500 hover:text-red-500">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                <div class="w-16 h-16 <?= ($role == 'PENERBIT') ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' ?> rounded-full flex items-center justify-center text-2xl mb-3">
+                    <?php if ($role == 'PENERBIT'): ?>
+                        <i data-lucide="pen-tool" class="w-8 h-8"></i>
+                    <?php else: ?>
+                        <i data-lucide="user" class="w-8 h-8"></i>
+                    <?php endif; ?>
+                </div>
+                <h1 class="text-xl font-bold <?= ($role == 'PENERBIT') ? 'text-purple-900' : 'text-blue-900' ?>">
+                    <?= ($role == 'PENERBIT') ? 'Publisher' : 'E-Library' ?>
+                </h1>
+                <p class="text-xs text-gray-500 mt-1 text-center">Halo, <?= htmlspecialchars($user['name']) ?></p>
+            </div>
+
+            <nav class="p-4 space-y-2">
+                <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                    <i data-lucide="home" class="w-5 h-5"></i> Home
+                </a>
+                <?php $dash_link = ($role == 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php'; ?>
+                <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                    <i data-lucide="library" class="w-5 h-5"></i> Katalog
+                </a>
+
+                <?php if ($role == 'PENERBIT'): ?>
+                    <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                        <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
+                    </a>
+                    <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                        <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
+                    </a>
+                <?php endif; ?>
+
+                <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium">
+                    <i data-lucide="history" class="w-5 h-5"></i> Riwayat
+                </a>
+
+                <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
+                    <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
+                </a>
+
+                <a href="profile.php" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?> shadow-sm transition">
+                    <i data-lucide="settings" class="w-5 h-5"></i> Profile
+                </a>
+
+                <?php if ($role == 'USER'): ?>
+                    <div class="pt-4 mt-4 border-t border-gray-200">
+                        <?php if ($current_user['request_penerbit'] == '0'): ?>
+                            <form method="POST">
+                                <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg font-medium transition duration-200">
+                                    <i data-lucide="pen-tool" class="w-5 h-5"></i> Jadi Penerbit
+                                </button>
+                            </form>
                         <?php else: ?>
-                            <i data-lucide="user" class="w-8 h-8"></i>
+                            <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center flex items-center justify-center gap-2">
+                                <i data-lucide="hourglass" class="w-4 h-4"></i> Menunggu Konfirmasi
+                            </div>
                         <?php endif; ?>
                     </div>
-                    <h1 class="text-xl font-bold <?= ($role == 'PENERBIT') ? 'text-purple-900' : 'text-blue-900' ?>">
-                        <?= ($role == 'PENERBIT') ? 'Publisher' : 'E-Library' ?>
-                    </h1>
-                    <p class="text-xs text-gray-500 mt-1">Halo, <?= htmlspecialchars($user['name']) ?></p>
-                </div>
+                <?php endif; ?>
 
-                <nav class="p-4 space-y-2">
-                    <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                        <i data-lucide="home" class="w-5 h-5"></i> Home
-                    </a>
-                    <?php $dash_link = ($role == 'PENERBIT') ? 'dashboard-publisher.php' : 'dashboard-user.php'; ?>
-                    <a href="<?= $dash_link ?>" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                        <i data-lucide="library" class="w-5 h-5"></i> Katalog
-                    </a>
+                <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
+                </a>
+            </nav>
+        </aside>
 
-                    <!-- MENU KHUSUS PENERBIT (Updated) -->
-                    <?php if ($role == 'PENERBIT'): ?>
-                        <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                            <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
-                        </a>
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 lg:ml-64 p-4 lg:p-10 transition-all duration-300">
 
-                        <a href="upload.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                            <i data-lucide="upload" class="w-5 h-5"></i> Upload Karya
-                        </a>
-                    <?php endif; ?>
+            <!-- HEADER MOBILE -->
+            <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border mb-8 sticky top-0 z-20">
+                <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-xl transition">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h1 class="font-black text-<?= $theme ?>-900">Pengaturan Profil</h1>
+                <div class="w-9 h-9 <?= $bg_soft ?> rounded-full border border-<?= $theme ?>-200"></div>
+            </div>
 
-                    <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                        <i data-lucide="history" class="w-5 h-5"></i> Riwayat
-                    </a>
+            <div class="max-w-4xl mx-auto">
 
-                    <!-- Menu Koleksi Baru -->
-                    <a href="saved_books.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 <?= $hover_soft ?> hover:text-<?= $theme ?>-700 rounded-lg font-medium transition">
-                        <i data-lucide="bookmark" class="w-5 h-5"></i> Koleksi
-                    </a>
+                <!-- INFORMASI USER HEADER (REPLACES BANNER) -->
+                <div class="flex flex-col md:flex-row items-center gap-8 mb-12">
+                    <div class="relative group">
+                        <div class="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-tr from-<?= $theme ?>-600 to-indigo-600 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl shadow-<?= $theme ?>-200 transform group-hover:rotate-6 transition-transform duration-500">
+                            <i data-lucide="<?= ($role == 'PENERBIT') ? 'pen-tool' : 'user' ?>" class="w-16 h-16 md:w-20 md:h-20"></i>
+                        </div>
+                    </div>
 
-                    <!-- Menu Profil Aktif -->
-                    <a href="profile.php" class="flex items-center gap-3 px-4 py-3 <?= $bg_soft ?> <?= $text_main ?> rounded-lg font-medium border <?= $border_main ?>">
-                        <i data-lucide="settings" class="w-5 h-5"></i> Profile
-                    </a>
+                    <div class="text-center md:text-left flex-1">
+                        <div class="inline-flex items-center ml-4 gap-2 px-3 py-1 rounded-full bg-<?= $theme ?>-100 text-<?= $theme ?>-700 text-[10px] font-bold uppercase tracking-widest mb-3">
+                            <i data-lucide="shield" class="w-3 h-3"></i> <?= $role ?> Akun
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-bold ml-5 text-gray-900 leading-tight mb-2"><?= htmlspecialchars($user['name']) ?></h2>
+                        <p class="text-gray-500 font-medium flex items-center ml-5 justify-center md:justify-start gap-2">
+                            <i data-lucide="mail" class="w-4 h-4"></i> <?= htmlspecialchars($user['email']) ?>
+                        </p>
 
-                    <?php if ($role == 'USER'): ?>
-                        <div class="pt-4 mt-4 border-t border-gray-200">
-                            <?php if ($user['request_penerbit'] == '0'): ?>
-                                <form method="POST">
-                                    <button type="submit" name="request_publisher" onclick="return confirm('Ingin mengajukan diri sebagai Penerbit?')" class="w-full text-left flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
-                                        <i data-lucide="pen-tool" class="w-5 h-5"></i> Jadi Penerbit
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <div class="px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-xs italic border text-center flex items-center justify-center gap-2">
-                                    <i data-lucide="hourglass" class="w-4 h-4"></i> Menunggu Konfirmasi
+                        <!-- Quick Stats -->
+                        <div class="flex flex-wrap justify-center md:justify-start gap-6 ml-5 mt-6">
+                            <div class="flex flex-col">
+                                <span class="text-2xl font-bold text-gray-900 leading-none"><?= $count_history ?></span>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Buku Dibaca</span>
+                            </div>
+                            <div class="w-px h-8 bg-gray-200"></div>
+                            <div class="flex flex-col">
+                                <span class="text-2xl font-bold text-gray-900 leading-none"><?= $count_saved ?></span>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Dalam Koleksi</span>
+                            </div>
+                            <?php if ($role == 'PENERBIT'): ?>
+                                <div class="w-px h-8 bg-gray-200"></div>
+                                <div class="flex flex-col">
+                                    <span class="text-2xl font-bold text-gray-900 leading-none">
+                                        <?= mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as t FROM books WHERE uploaded_by=$id"))['t'] ?>
+                                    </span>
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Karya Terbit</span>
                                 </div>
                             <?php endif; ?>
                         </div>
-                    <?php endif; ?>
-
-                    <a href="logout.php" class="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg mt-auto pt-4 border-t">
-                        <i data-lucide="log-out" class="w-5 h-5"></i> Keluar
-                    </a>
-                </nav>
-            </aside>
-
-            <!-- Main Content User -->
-            <main class="flex-1 lg:ml-64 p-4 lg:p-8 transition-all duration-300">
-                <!-- Header Mobile -->
-                <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
-                    <div class="flex items-center gap-3">
-                        <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
-                            <i data-lucide="menu" class="w-6 h-6"></i>
-                        </button>
-                        <h1 class="font-bold <?= $text_main ?> text-lg">Edit Profil</h1>
                     </div>
                 </div>
 
-                <div class="max-w-4xl mx-auto">
-                    <?php if ($message): ?>
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex items-center gap-2">
-                            <i data-lucide="check-circle" class="w-5 h-5"></i> <?= $message ?>
-                        </div>
-                    <?php endif; ?>
+                <!-- FORM PENGATURAN -->
+                <div class="grid grid-cols-1 gap-8">
 
-                    <?php if ($error): ?>
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center gap-2">
-                            <i data-lucide="alert-circle" class="w-5 h-5"></i> <?= $error ?>
-                        </div>
-                    <?php endif; ?>
+                    <form method="POST" class="space-y-8">
 
-                    <div class="bg-white rounded-xl shadow-sm border p-6 lg:p-8">
-                        <div class="flex items-center gap-4 border-b pb-6 mb-6">
-                            <div class="<?= $bg_soft ?> p-3 rounded-full <?= $text_main ?>">
-                                <i data-lucide="user-cog" class="w-8 h-8"></i>
+                        <!-- Section: Data Pribadi -->
+                        <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 lg:p-10 transition-all hover:shadow-md">
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="w-12 h-12 bg-<?= $theme ?>-50 rounded-2xl flex items-center justify-center text-<?= $theme ?>-600">
+                                    <i data-lucide="user-round" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900">Informasi Pribadi</h3>
+                                    <p class="text-xs text-gray-400 font-medium">Perbarui data identitas diri Anda di sini.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 class="text-2xl font-bold text-gray-800">Profil Saya</h2>
-                                <p class="text-gray-500 text-sm">Kelola informasi akun Anda</p>
-                            </div>
-                        </div>
 
-                        <form method="POST" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                                    <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 <?= $ring_focus ?> outline-none transition">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk</label>
-                                    <input type="text" name="nim" value="<?= htmlspecialchars($user['nim']) ?>" required class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 <?= $ring_focus ?> outline-none transition">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 <?= $ring_focus ?> outline-none transition">
-                                </div>
-                            </div>
-
-                            <div class="bg-gray-50 p-6 rounded-lg border border-gray-100 mt-6">
-                                <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <i data-lucide="lock" class="w-4 h-4"></i> Keamanan
-                                </h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password Lama</label>
-                                        <input type="password" name="old_password" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 <?= $ring_focus ?> outline-none bg-white">
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nama Lengkap</label>
+                                    <div class="relative">
+                                        <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
+                                        <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password Baru</label>
-                                        <input type="password" name="password" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 <?= $ring_focus ?> outline-none bg-white">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Nomor Induk (NIM/NIP)</label>
+                                    <div class="relative">
+                                        <i data-lucide="credit-card" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
+                                        <input type="text" name="nim" value="<?= htmlspecialchars($user['nim']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                                <div class="md:col-span-2 space-y-2">
+                                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Alamat Email</label>
+                                    <div class="relative">
+                                        <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
+                                        <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 <?= $ring_focus ?> focus:bg-white outline-none transition-all font-medium">
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="flex justify-end gap-3 pt-4">
-                                <button type="submit" name="update" class="px-6 py-3 <?= $btn_main ?> text-white rounded-lg font-bold shadow-lg transition flex items-center gap-2">
-                                    <i data-lucide="save" class="w-5 h-5"></i> Simpan Perubahan
-                                </button>
+                        <!-- Section: Keamanan Akun -->
+                        <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 lg:p-10 transition-all hover:shadow-md">
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
+                                    <i data-lucide="lock" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900">Keamanan & Password</h3>
+                                    <p class="text-xs text-gray-400 font-medium">Kosongkan kolom password jika tidak ingin menggantinya.</p>
+                                </div>
                             </div>
-                        </form>
-                    </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password Saat Ini</label>
+                                    <div class="relative">
+                                        <i data-lucide="key" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
+                                        <input type="password" name="old_password" placeholder="••••••••" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-100 focus:bg-white outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1">Password Baru</label>
+                                    <div class="relative">
+                                        <i data-lucide="shield-plus" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300"></i>
+                                        <input type="password" name="password" placeholder="Minimal 6 karakter" class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-100 focus:bg-white outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="flex items-center justify-end gap-4 pb-10">
+                            <a href="<?= $dash_link ?>" class="px-8 py-4 text-gray-400 hover:text-gray-600 font-bold transition-colors">Batal</a>
+                            <button type="submit" name="update" class="px-10 py-4 <?= $btn_main ?> text-white rounded-2xl font-black transition-all transform hover:scale-105 flex items-center gap-3 shadow-xl">
+                                <i data-lucide="save" class="w-5 h-5"></i> Simpan Perubahan
+                            </button>
+                        </div>
+
+                    </form>
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
+    </div>
 
-        <script>
-            lucide.createIcons();
+    <script>
+        lucide.createIcons();
 
-            function toggleSidebar() {
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('mobile-overlay');
-                if (sidebar.classList.contains('-translate-x-full')) {
-                    sidebar.classList.remove('-translate-x-full');
-                    overlay.classList.remove('hidden');
-                } else {
-                    sidebar.classList.add('-translate-x-full');
-                    overlay.classList.add('hidden');
-                }
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = 'auto';
             }
-        </script>
-
-    <?php endif; ?>
-
+        });
+    </script>
 </body>
 
 </html>
