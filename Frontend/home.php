@@ -84,7 +84,11 @@ if (mysqli_num_rows($recommended_books) == 0) {
     <title>Home - E-Library</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
@@ -102,7 +106,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50">
 
     <!-- OVERLAY MOBILE -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
@@ -196,7 +200,7 @@ if (mysqli_num_rows($recommended_books) == 0) {
             <!-- Hero Banner -->
             <div class="mb-8 lg:mb-10 bg-gradient-to-r <?= $bgGradient ?> text-white rounded-2xl p-6 lg:p-10 shadow-lg relative overflow-hidden">
                 <div class="relative z-10">
-                    <h2 class="text-2xl lg:text-4xl font-bold mb-2">Selamat Datang Kembali, <?= htmlspecialchars($name) ?>!</h2>
+                    <h2 class="text-2xl lg:text-3xl font-bold mb-2">Selamat Datang Kembali, <?= htmlspecialchars($name) ?>!</h2>
                     <p class="text-<?= $themeClass ?>-100 max-w-lg text-sm lg:text-base">Temukan bacaan menarik hari ini berdasarkan preferensi yang kamu sukai.</p>
                 </div>
                 <i data-lucide="sparkles" class="absolute -right-6 -bottom-6 w-32 h-32 lg:w-48 lg:h-48 text-white opacity-10 rotate-12"></i>
