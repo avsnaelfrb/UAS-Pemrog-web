@@ -275,7 +275,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             <?php if (mysqli_num_rows($books) > 0): ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
                     <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-x1 hover:shadow-lg hover:shadow-blue-100  transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
+                        <div class="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-x1 hover:shadow-lg hover:shadow-blue-100  transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
                             <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
                                 <?php
                                 $coverPath = '../uploads/covers/' . $book['cover'];

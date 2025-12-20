@@ -579,7 +579,7 @@ if (!function_exists('getStatusBadge')) {
                                             <a href="read.php?id=<?= $b['id'] ?>" target="_blank" class="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm">
                                                 <i data-lucide="eye" class="w-4 h-4"></i> Pratinjau
                                             </a>
-                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-green-100">
+                                            <a href="?page=validation_books&approve_book=<?= $b['id'] ?>" class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-500 text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-600 hover:scale-[1.02] active:scale-95 transition-all shadow-md">
                                                 <i data-lucide="check" class="w-4 h-4"></i> Terbit
                                             </a>
                                             <a href="?page=validation_books&reject_book=<?= $b['id'] ?>" onclick="return confirm('Tolak buku ini?')" class="inline-flex items-center justify-center w-11 h-11 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 hover:text-red-700 transition-all border border-red-100">

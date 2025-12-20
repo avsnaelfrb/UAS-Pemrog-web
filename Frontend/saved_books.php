@@ -173,7 +173,7 @@ $books = mysqli_query($conn, $sql);
                 <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-                            <i data-lucide="bookmark" class="w-6 h-6 text-green-600"></i> Buku Disimpan
+                            <i data-lucide="bookmark" class="w-6 h-6 text-<?= $theme ?>-600"></i> Buku Disimpan
                         </h2>
                         <p class="text-gray-500 text-sm">Daftar buku favorit yang Anda simpan.</p>
                     </div>
@@ -182,7 +182,7 @@ $books = mysqli_query($conn, $sql);
                 <?php if (mysqli_num_rows($books) > 0): ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 flex flex-col h-full group relative">
+                            <div class="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-lg hover:shadow-blue-100 transition duration-300 flex flex-col h-full group relative">
 
                                 <!-- Tombol Hapus Cepat -->
                                 <a href="saved_books.php?unsave=<?= $book['id'] ?>" onclick="return confirm('Hapus dari koleksi?')" class="absolute top-2 right-2 z-20 bg-white p-1.5 rounded-full shadow-md text-red-400 hover:text-red-600 transition" title="Hapus dari koleksi">
@@ -218,8 +218,13 @@ $books = mysqli_query($conn, $sql);
                                     </h3>
                                     <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($book['author']) ?></p>
 
+                                    <div class="flex flex-wrap gap-1 mb-4">
+                                        <?php foreach (explode(',', $book['genre_names']) as $gn): if (trim($gn) == '') continue; ?>
+                                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200 group-hover:border-blue-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition"><?= trim($gn) ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
                                     <div class="mt-auto pt-4 border-t border-gray-100">
-                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-blue-500 text-gray-100 hover:bg-blue-700 rounded-lg font-medium transition">
+                                        <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-blue-600 text-gray-100 hover:bg-blue-700 rounded-lg font-medium transition">
                                             Lihat Buku
                                         </a>
                                     </div>

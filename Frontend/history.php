@@ -198,11 +198,11 @@ if (!function_exists('time_ago')) {
                 <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                            <i data-lucide="history" class="w-6 h-6 text-blue-500"></i> Aktivitas Terakhir
+                            <i data-lucide="history" class="w-6 h-6 text-<?= $theme ?>-500"></i> Aktivitas Terakhir
                         </h2>
                         <p class="text-gray-500 text-sm">Daftar buku yang baru saja Anda baca.</p>
                     </div>
-                    <div class="bg-blue-50 px-4 py-2 rounded-lg border text-sm font-bold text-blue-600">
+                    <div class="bg-<?= $theme ?>-50 px-4 py-2 rounded-lg border text-sm font-bold text-<?= $theme ?>-600">
                         Total: <?= mysqli_num_rows($books) ?> Buku
                     </div>
                 </div>
@@ -210,7 +210,7 @@ if (!function_exists('time_ago')) {
                 <?php if (mysqli_num_rows($books) > 0): ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 flex flex-col h-full group relative">
+                            <div class="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-lg hover:shadow-blue-100 transition duration-300 flex flex-col h-full group relative">
 
                                 <!-- Cover -->
                                 <div class="h-64 bg-gray-100 relative overflow-hidden rounded-t-xl">
