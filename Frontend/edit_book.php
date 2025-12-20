@@ -128,7 +128,11 @@ $current_user = mysqli_fetch_assoc($u_res);
     <title>Edit Karya - Publisher</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
@@ -152,7 +156,7 @@ $current_user = mysqli_fetch_assoc($u_res);
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans text-gray-800">
+<body class="bg-gray-50">
 
     <?php if ($error_msg): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2">
