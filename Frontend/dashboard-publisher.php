@@ -16,10 +16,14 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
 $filter_type = isset($_GET['type']) ? $_GET['type'] : '';
 $filter_genres = isset($_GET['genres']) ? $_GET['genres'] : [];
 
-$sql = "SELECT b.id, b.title, b.author, b.cover, b.type, GROUP_CONCAT(g.name SEPARATOR ', ') as genre_names 
+// PERBAIKAN QUERY: Menambahkan penghitungan Like yang akurat (DISTINCT) dan genre
+$sql = "SELECT b.id, b.title, b.author, b.cover, b.type, 
+        GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names,
+        COUNT(DISTINCT bl.id) as total_likes
         FROM books b 
         LEFT JOIN book_genres bg ON b.id = bg.book_id 
         LEFT JOIN genres g ON bg.genre_id = g.id 
+        LEFT JOIN book_likes bl ON b.id = bl.book_id
         WHERE b.status='APPROVED' ";
 
 if ($search) {
@@ -74,6 +78,17 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
         .genre-scroll::-webkit-scrollbar-thumb:hover {
             background: #c084fc;
         }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-hover-effect:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
     </style>
 </head>
 
@@ -97,12 +112,10 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                 <a href="home.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition">
                     <i data-lucide="home" class="w-5 h-5"></i> Home
                 </a>
-                <!-- Menu Aktif -->
                 <a href="dashboard-publisher.php" class="flex items-center gap-3 px-4 py-3 bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100 shadow-sm">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
 
-                <!-- Menu Terbitan Saya Baru -->
                 <a href="my_publications.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-purple-50 hover:text-purple-700 rounded-lg font-medium transition duration-200">
                     <i data-lucide="folder" class="w-5 h-5"></i> Terbitan Saya
                 </a>
@@ -129,7 +142,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 lg:ml-64 p-8 transition-all duration-300">
+        <main class="flex-1 lg:ml-64 p-4 lg:p-8 transition-all duration-300">
             <!-- Header Mobile -->
             <div class="lg:hidden flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border mb-6 sticky top-0 z-20">
                 <button onclick="toggleSidebar()" class="text-gray-700 p-2 hover:bg-gray-100 rounded-lg">
@@ -142,38 +155,32 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             </div>
 
             <!-- Banner Statistik Singkat Penerbit -->
-            <div class="mb-8 bg-gradient-to-r from-purple-800 to-indigo-900 text-white rounded-xl p-6 shadow-lg shadow-purple-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 class="text-2xl font-bold">Selamat Datang, Kontributor!</h2>
-                    <p class="text-purple-200 text-sm">Bagikan pengetahuanmu melalui karya tulis.</p>
+            <div class="mb-8 bg-gradient-to-r from-purple-800 to-indigo-900 text-white rounded-2xl p-6 lg:p-10 shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="relative z-10">
+                    <h2 class="text-2xl lg:text-3xl font-bold mb-2">Selamat Datang, Kontributor!</h2>
+                    <p class="text-purple-200 text-sm lg:text-base">Bagikan pengetahuanmu melalui karya tulis yang berkualitas.</p>
                 </div>
-                <a href="upload.php" class="bg-white text-purple-900 px-6 py-2 rounded-lg font-bold hover:bg-purple-50 hover:scale-105 transition transform shadow w-full md:w-auto text-center flex items-center justify-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Upload Baru
+                <a href="upload.php" class="relative z-10 bg-white text-purple-900 px-8 py-3 rounded-xl font-bold hover:bg-purple-50 hover:scale-105 transition transform shadow-xl w-full md:w-auto text-center flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Upload Baru
                 </a>
+                <i data-lucide="sparkles" class="absolute -right-6 -bottom-6 w-32 h-32 text-white opacity-10 rotate-12"></i>
             </div>
 
-            <!-- Section 2: Katalog Umum -->
-            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
-                <i data-lucide="library" class="w-5 h-5"></i> Katalog Perpustakaan
-            </h3>
-
-            <!-- SEARCH & FILTER BAR (ADAPTASI UNGU) -->
+            <!-- SEARCH & FILTER BAR -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col gap-4 relative z-10">
                 <form method="GET" class="flex flex-col md:flex-row gap-4 w-full items-stretch">
-                    <!-- Search Input -->
                     <div class="flex-1 relative">
-                        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari judul atau penulis..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition h-full">
+                        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Cari judul atau penulis..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-400 outline-none transition h-full text-sm">
                         <span class="absolute left-3 top-3.5 text-gray-400">
                             <i data-lucide="search" class="w-5 h-5"></i>
                         </span>
                     </div>
 
-                    <!-- DROPDOWN GENRE (Multi-Select Purple Style) -->
                     <div class="relative min-w-[220px]" id="genreDropdownContainer">
-                        <button type="button" onclick="toggleGenreDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-left flex justify-between items-center text-gray-700 transition hover:bg-purple-50">
+                        <button type="button" onclick="toggleGenreDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 text-left flex justify-between items-center text-gray-700 text-sm transition hover:bg-purple-50">
                             <span id="genreLabel" class="truncate mr-2 flex items-center gap-2">
                                 <?php if (empty($filter_genres)): ?>
-                                    <div class="flex items-center gap-2"><i data-lucide="folder" class="w-4 h-4"></i> Pilih Genre</div>
+                                    <div class="flex items-center gap-2"><i data-lucide="folder" class="w-4 h-4 text-purple-500"></i> Pilih Genre</div>
                                 <?php else: ?>
                                     <?= count($filter_genres) . ' Genre Dipilih' ?>
                                 <?php endif; ?>
@@ -196,21 +203,14 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                         </div>
                     </div>
 
-                    <!-- DROPDOWN TIPE (Single Select Purple Style) -->
                     <div class="relative min-w-[180px]" id="typeDropdownContainer">
                         <input type="hidden" name="type" id="typeInput" value="<?= htmlspecialchars($filter_type) ?>">
-
-                        <button type="button" onclick="toggleTypeDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 text-left flex justify-between items-center text-gray-700 transition hover:bg-purple-50">
-                            <span id="typeLabel" class="truncate mr-2 flex items-center gap-2">
-                                <?= $active_type_label ?>
-                            </span>
+                        <button type="button" onclick="toggleTypeDropdown()" class="w-full h-full px-4 py-3 border border-gray-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-purple-200 text-left flex justify-between items-center text-gray-700 text-sm transition hover:bg-purple-50">
+                            <span id="typeLabel" class="truncate mr-2 flex items-center gap-2 text-sm"><?= $active_type_label ?></span>
                             <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform duration-200" id="typeArrow"></i>
                         </button>
-
                         <div id="typePanel" class="hidden absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 overflow-hidden">
-                            <?php foreach ($type_map as $val => $label):
-                                $isSelected = ($filter_type == $val);
-                            ?>
+                            <?php foreach ($type_map as $val => $label): $isSelected = ($filter_type == $val); ?>
                                 <div onclick="selectType('<?= $val ?>', '<?= htmlspecialchars($label) ?>')"
                                     class="px-4 py-2.5 hover:bg-purple-50 cursor-pointer text-sm flex items-center justify-between group transition <?= $isSelected ? 'bg-purple-50 text-purple-600 font-medium' : 'text-gray-700' ?>">
                                     <span><?= $label ?></span>
@@ -227,101 +227,117 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     </button>
                 </form>
 
-                <!-- Badge Filter Aktif -->
                 <?php if (!empty($filter_genres) || $filter_type || $search): ?>
-                    <div class="flex flex-wrap gap-2 text-sm text-gray-600 items-center mt-2">
+                    <div class="flex flex-wrap gap-2 text-sm text-gray-600 items-center mt-2 border-t pt-4 border-gray-50">
                         <span class="text-xs font-semibold mr-1">Filter Aktif:</span>
-
                         <?php if ($search): ?>
                             <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full border border-yellow-200 text-xs flex items-center gap-1">
                                 <i data-lucide="search" class="w-3 h-3"></i> "<?= htmlspecialchars($search) ?>"
                             </span>
                         <?php endif; ?>
-
                         <?php if (!empty($filter_genres)): ?>
                             <?php
                             mysqli_data_seek($genres_list, 0);
                             while ($gx = mysqli_fetch_assoc($genres_list)) {
-                                if (in_array($gx['id'], $filter_genres)) {
-                                    echo '<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 text-xs flex items-center gap-1"><i data-lucide="folder" class="w-3 h-3"></i> ' . htmlspecialchars($gx['name']) . '</span>';
-                                }
+                                if (in_array($gx['id'], $filter_genres)) echo '<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full border border-purple-200 text-xs flex items-center gap-1"><i data-lucide="folder" class="w-3 h-3"></i> ' . htmlspecialchars($gx['name']) . '</span>';
                             }
                             ?>
                         <?php endif; ?>
-
                         <?php if ($filter_type && isset($type_map[$filter_type])): ?>
                             <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full border border-green-200 text-xs flex items-center gap-1">
                                 <?= $type_map[$filter_type] ?>
                             </span>
                         <?php endif; ?>
-
-                        <a href="dashboard-publisher.php" class="text-gray-400 hover:text-red-500 hover:underline ml-auto text-xs font-medium transition">
-                            Reset Filter
-                        </a>
+                        <a href="dashboard-publisher.php" class="text-gray-400 hover:text-red-500 hover:underline ml-auto text-xs font-medium transition">Reset Filter</a>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <!-- GRID BUKU (UPDATED STYLE: Matches dashboard-user.php) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-20">
-                <?php while ($book = mysqli_fetch_assoc($books)) { ?>
-                    <!-- KARTU BUKU DENGAN HOVER UNGU -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-xl hover:shadow-purple-100 hover:border-purple-200 transition duration-300 flex flex-col h-full group transform hover:-translate-y-1">
-
-                        <div class="h-64 bg-gray-200 relative overflow-hidden rounded-t-xl">
-                            <?php
-                            $coverPath = '../uploads/covers/' . $book['cover'];
-                            if (!empty($book['cover']) && file_exists($coverPath)):
-                            ?>
-                                <img src="<?= $coverPath ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                            <?php else: ?>
-                                <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                                    <i data-lucide="image-off" class="w-10 h-10 mb-2"></i>
-                                    <span class="text-xs">No Cover</span>
-                                </div>
-                            <?php endif; ?>
-
-                            <!-- Overlay tipis saat hover (Purple Tint) -->
-                            <div class="absolute inset-0 bg-purple-900 bg-opacity-0 group-hover:bg-opacity-10 transition duration-300"></div>
-                        </div>
-
-                        <div class="p-4 flex-1 flex flex-col">
-                            <!-- Type Badge -->
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="text-xs font-semibold text-purple-600 tracking-wide uppercase bg-purple-50 px-2 py-1 w-fit rounded border border-purple-100">
-                                    <?= $book['type'] ?>
-                                </div>
-                            </div>
-
-                            <h3 class="font-bold text-gray-900 text-lg mb-1 leading-snug line-clamp-2 group-hover:text-purple-700 transition" title="<?= htmlspecialchars($book['title']) ?>">
-                                <?= htmlspecialchars($book['title']) ?>
-                            </h3>
-                            <p class="text-sm text-gray-500 mb-3 font-medium">
-                                <?= htmlspecialchars($book['author']) ?>
-                            </p>
-
-                            <!-- Genre Badges (NEW FEATURE) -->
-                            <div class="flex flex-wrap gap-1 mb-4">
+            <!-- GRID BUKU (MODERN STYLE SYNCED WITH HOME.PHP) -->
+            <?php if (mysqli_num_rows($books) > 0): ?>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-20">
+                    <?php while ($book = mysqli_fetch_assoc($books)) { ?>
+                        <div class="bg-white rounded-2xl border border-gray-100 transition-all duration-300 flex flex-col h-full group card-hover-effect shadow-md hover:shadow-lg hover:shadow-purple-100 transform hover:-translate-y-2">
+                            <div class="h-64 relative overflow-hidden rounded-t-2xl bg-gray-50">
                                 <?php
-                                $g_names = explode(',', $book['genre_names']);
-                                foreach ($g_names as $gn):
-                                    if (trim($gn) == '') continue;
-                                ?>
-                                    <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] rounded-md border border-gray-200 group-hover:border-purple-100 group-hover:bg-purple-50 group-hover:text-purple-600 transition">
-                                        <?= trim($gn) ?>
+                                $coverPath = '../uploads/covers/' . $book['cover'];
+                                if (!empty($book['cover']) && file_exists($coverPath)): ?>
+                                    <img src="<?= $coverPath ?>" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                                <?php else: ?>
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                        <i data-lucide="image-off" class="w-12 h-12 mb-2"></i>
+                                        <span class="text-xs font-medium uppercase tracking-widest">No Cover</span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Floating Badge Tipe -->
+                                <div class="absolute top-4 left-4">
+                                    <div class="text-[10px] font-extrabold text-white tracking-wide uppercase bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/20">
+                                        <?= $book['type'] ?>
+                                    </div>
+                                </div>
+
+                                <!-- Floating Badge Like (NEW FOR PUBLISHER) -->
+                                <div class="absolute bottom-4 left-4">
+                                    <span class="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600 text-white text-[11px] font-extrabold rounded-full shadow-lg">
+                                        <i data-lucide="heart" class="w-3.5 h-3.5 fill-current"></i>
+                                        <?= number_format($book['total_likes']) ?>
                                     </span>
-                                <?php endforeach; ?>
+                                </div>
+
+                                <!-- Quick View Overlay on Hover -->
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <a href="detail.php?id=<?= $book['id'] ?>" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-purple-600 shadow-2xl transform scale-50 group-hover:scale-100 transition-transform duration-300">
+                                        <i data-lucide="eye" class="w-6 h-6"></i>
+                                    </a>
+                                </div>
                             </div>
 
-                            <div class="mt-auto pt-4 border-t border-gray-100">
-                                <a href="detail.php?id=<?= $book['id'] ?>" class="block w-full text-center py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold transition shadow-sm hover:shadow-md">
-                                    Lihat Detail
-                                </a>
+                            <div class="p-5 flex flex-col flex-1">
+                                <div class="mb-3">
+                                    <h4 class="font-extrabold text-gray-900 text-base mb-1 leading-tight line-clamp-2 group-hover:text-purple-700 transition-colors" title="<?= htmlspecialchars($book['title']) ?>">
+                                        <?= htmlspecialchars($book['title']) ?>
+                                    </h4>
+                                    <p class="text-xs font-medium text-gray-500 flex items-center gap-1">
+                                        <i data-lucide="user" class="w-3.5 h-3.5"></i> <?= htmlspecialchars($book['author']) ?>
+                                    </p>
+                                </div>
+
+                                <!-- Genre Tags -->
+                                <div class="flex flex-wrap gap-1.5 mb-5 mt-auto">
+                                    <?php
+                                    if ($book['genre_names']) {
+                                        $genres = explode(',', $book['genre_names']);
+                                        $displayGenres = array_slice($genres, 0, 2);
+                                        foreach ($displayGenres as $gn) {
+                                            if (trim($gn) == '') continue;
+                                            echo '<span class="px-2.5 py-1 bg-gray-50 text-gray-600 text-[10px] font-extrabold rounded-md border border-gray-200 group-hover:bg-purple-50 group-hover:text-purple-600 group-hover:border-purple-100 transition-all">' . trim($gn) . '</span>';
+                                        }
+                                        if (count($genres) > 2) {
+                                            echo '<span class="text-[10px] text-gray-400 font-bold ml-1">+' . (count($genres) - 2) . '</span>';
+                                        }
+                                    }
+                                    ?>
+                                </div>
+
+                                <div class="mt-auto pt-4 border-t border-gray-100">
+                                    <a href="detail.php?id=<?= $book['id'] ?>" class="flex items-center justify-center gap-2 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-purple-100 group-hover:shadow-lg">
+                                        Baca Detail <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                    <?php } ?>
+                </div>
+            <?php else: ?>
+                <div class="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-300">
+                    <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="folder-search" class="w-10 h-10 text-gray-300"></i>
                     </div>
-                <?php } ?>
-            </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Tidak ada hasil ditemukan</h3>
+                    <p class="text-gray-500 text-sm">Coba sesuaikan kata kunci atau filter pencarian Anda.</p>
+                </div>
+            <?php endif; ?>
         </main>
     </div>
 
@@ -335,13 +351,14 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
             } else {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
+                document.body.style.overflow = 'auto';
             }
         }
 
-        // --- LOGIKA DROPDOWN GENRE ---
         function toggleGenreDropdown() {
             const panel = document.getElementById('genrePanel');
             const arrow = document.getElementById('genreArrow');
@@ -357,10 +374,10 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
         function closeGenreDropdown() {
             document.getElementById('genrePanel').classList.add('hidden');
-            document.getElementById('genreArrow').style.transform = 'rotate(0deg)';
+            const arrow = document.getElementById('genreArrow');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
         }
 
-        // --- LOGIKA DROPDOWN TYPE ---
         function toggleTypeDropdown() {
             const panel = document.getElementById('typePanel');
             const arrow = document.getElementById('typeArrow');
@@ -376,24 +393,23 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
         function closeTypeDropdown() {
             document.getElementById('typePanel').classList.add('hidden');
-            document.getElementById('typeArrow').style.transform = 'rotate(0deg)';
+            const arrow = document.getElementById('typeArrow');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
         }
 
         function selectType(value, label) {
             document.getElementById('typeInput').value = value;
-            document.getElementById('typeLabel').innerHTML = label; // Use innerHTML to render icons
+            document.getElementById('typeLabel').innerHTML = label;
             closeTypeDropdown();
         }
 
-        // --- GLOBAL CLICK LISTENER ---
         document.addEventListener('click', function(event) {
             const genreContainer = document.getElementById('genreDropdownContainer');
-            if (!genreContainer.contains(event.target)) closeGenreDropdown();
             const typeContainer = document.getElementById('typeDropdownContainer');
-            if (!typeContainer.contains(event.target)) closeTypeDropdown();
+            if (genreContainer && !genreContainer.contains(event.target)) closeGenreDropdown();
+            if (typeContainer && !typeContainer.contains(event.target)) closeTypeDropdown();
         });
 
-        // Initialize Lucide Icons
         lucide.createIcons();
     </script>
 </body>
