@@ -33,7 +33,7 @@ $filter_genres = isset($_GET['genres']) ? $_GET['genres'] : [];
 $sql = "
     SELECT b.id, b.title, b.author, b.cover, b.type,
     GROUP_CONCAT(DISTINCT g.name SEPARATOR ', ') as genre_names,
-    COUNT(bl.id) as total_likes
+    COUNT(DISTINCT bl.id) as total_likes
     FROM books b 
     LEFT JOIN book_genres bg ON b.id = bg.book_id 
     LEFT JOIN genres g ON bg.genre_id = g.id 
@@ -41,7 +41,7 @@ $sql = "
     WHERE b.status = 'APPROVED' 
 ";
 
-if ($search) {
+            if ($search) {
     $sql .= " AND (title LIKE '%$search%' OR author LIKE '%$search%')";
 }
 if ($filter_type) {
@@ -143,7 +143,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
                     <i data-lucide="home" class="w-5 h-5"></i> Home
                 </a>
 
-                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-bold border border-blue-100">
+                <a href="dashboard-user.php" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-100">
                     <i data-lucide="library" class="w-5 h-5"></i> Katalog
                 </a>
                 <a href="history.php" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded-lg font-medium transition">
@@ -305,7 +305,7 @@ $active_type_label = isset($type_map[$filter_type]) ? $type_map[$filter_type] : 
 
                                 <!-- Floating Badge Tipe -->
                                 <div class="absolute top-4 left-4">
-                                    <div class="px-2.5 py-1 bg-white/90 backdrop-blur text-blue-700 text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
+                                    <div class="px-2.5 py-1 bg-black/60 backdrop-blur text-white text-[10px] font-bold rounded-lg shadow-sm uppercase tracking-wider">
                                         <?= $book['type'] ?>
                                     </div>
                                 </div>
