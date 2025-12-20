@@ -118,14 +118,19 @@ if ($role == 'ADMIN') $back_link = 'dashboard-admin.php';
     <title>Detail: <?= htmlspecialchars($book['title']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Plus Jakarta Sans';
+        }
+
         .sidebar-transition {
             transition: transform 0.3s ease-in-out;
         }
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans">
+<body class="bg-gray-50">
 
     <?php if ($msg_action): ?>
         <div onclick="this.remove()" class="fixed top-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50 cursor-pointer animate-bounce flex items-center gap-2 border border-gray-700">
