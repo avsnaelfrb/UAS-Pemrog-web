@@ -9,8 +9,48 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'ADMIN') {
 $message = '';
 $error_msg = '';
 $active_page = isset($_GET['page']) ? $_GET['page'] : 'books';
+$user_id = $_SESSION['user_id'];
 
 // --- LOGIC HANDLERS ---
+if (isset($_POST['update_profile'])) {
+    $name = mysqli_real_escape_string($conn, $_POST['name']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $nim = mysqli_real_escape_string($conn, $_POST['nim']);
+    $password_baru = $_POST['password'];
+    $password_lama = $_POST['old_password'];
+
+    $cek_email = mysqli_query($conn, "SELECT id FROM users WHERE email = '$email' AND id != $user_id");
+    if (mysqli_num_rows($cek_email) > 0) {
+        $error_msg = "Email sudah digunakan oleh akun lain!";
+    } else {
+        $password_valid = true;
+        $hashed_password_baru = '';
+
+        if (!empty($password_baru)) {
+            $q_cek_pass = mysqli_query($conn, "SELECT password FROM users WHERE id = $user_id");
+            $data_user_curr = mysqli_fetch_assoc($q_cek_pass);
+            if (password_verify($password_lama, $data_user_curr['password'])) {
+                $hashed_password_baru = password_hash($password_baru, PASSWORD_DEFAULT);
+            } else {
+                $password_valid = false;
+                $error_msg = "Password lama yang Anda masukkan salah!";
+            }
+        }
+
+        if ($password_valid) {
+            $query = "UPDATE users SET name='$name', email='$email', nim='$nim'";
+            if (!empty($hashed_password_baru)) $query .= ", password='$hashed_password_baru'";
+            $query .= " WHERE id=$user_id";
+
+            if (mysqli_query($conn, $query)) {
+                $_SESSION['name'] = $name;
+                $message = "Profil Admin berhasil diperbarui!";
+            } else {
+                $error_msg = "Gagal memperbarui database.";
+            }
+        }
+    }
+}
 
 if (isset($_GET['delete_book'])) {
     $id = (int)$_GET['delete_book'];
@@ -94,6 +134,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'deleted') $message = "Data berhasil 
 $notif_req_penerbit = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM users WHERE request_penerbit='1'"));
 $notif_req_buku = mysqli_num_rows(mysqli_query($conn, "SELECT id FROM books WHERE status='PENDING'"));
 
+$u_admin = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM users WHERE id=$user_id"));
 // Helper Function for Time Ago
 if (!function_exists('time_elapsed_string')) {
     function time_elapsed_string($datetime, $full = false)
@@ -195,7 +236,7 @@ if (!function_exists('getStatusBadge')) {
     <div class="flex min-h-screen">
         <aside class="w-64 bg-white shadow-xl fixed inset-y-0 left-0 z-40 border-r hidden lg:block">
             <div class="p-6 border-b flex flex-col items-center">
-                <div class="mb-2 text-blue-800">
+                <div class="mb-2 text-blue-700">
                     <i data-lucide="shield-check" class="w-10 h-10"></i>
                 </div>
                 <h1 class="font-bold text-gray-800">Admin Panel</h1>
@@ -233,8 +274,8 @@ if (!function_exists('getStatusBadge')) {
                 </a>
 
                 <div class="text-xs font-bold text-gray-400 px-4 mt-6">AKUN</div>
-                <a href="profile.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50">
-                    <i data-lucide="settings" class="w-4 h-4 mr-2"></i> Edit Profil
+                <a href="?page=profile" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 <?= $active_page == 'profile' ? 'active-nav' : '' ?>">
+                    <i data-lucide="user-cog" class="w-4 h-4 mr-3"></i> Edit Profil
                 </a>
                 <a href="logout.php" class="flex items-center px-4 py-3 rounded-lg hover:bg-red-50 text-red-600">
                     <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Logout
@@ -827,7 +868,74 @@ if (!function_exists('getStatusBadge')) {
                         </table>
                     </div>
                     <?php break; ?>
+                <?php
 
+                case 'profile': ?>
+                    <!-- === INTERNAL PAGE: EDIT PROFILE ADMIN === -->
+                    <div class="max-w-4xl mx-auto">
+
+                        <div class="flex flex-col md:flex-row items-center gap-8 mb-12 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+                            <div class="w-32 h-32 bg-gradient-to-tr from-blue-700 to-indigo-900 rounded-[2rem] flex items-center justify-center text-white shadow-xl">
+                                <i data-lucide="shield-check" class="w-16 h-16"></i>
+                            </div>
+                            <div class="text-center md:text-left">
+                                <span class="px-3 py-1 bg-slate-100 text-blue-700 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200 mb-3 inline-block">System Administrator</span>
+                                <h3 class="text-3xl font-black text-gray-900 mb-1"><?= htmlspecialchars($u_admin['name']) ?></h3>
+                                <p class="text-gray-500 font-medium"><?= htmlspecialchars($u_admin['email']) ?></p>
+                            </div>
+                        </div>
+
+                        <form method="POST" class="space-y-8">
+                            <div class="bg-white rounded-[2rem] border border-gray-100 p-6 lg:p-10 shadow-sm">
+                                <div class="flex items-center gap-4 mb-8">
+                                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                        <i data-lucide="user" class="w-6 h-6"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-900">Informasi Pribadi</h4>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
+                                        <input type="text" name="name" value="<?= htmlspecialchars($u_admin['name']) ?>" required class="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-slate-100 outline-none transition-all font-medium">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">ID / NIP Admin</label>
+                                        <input type="text" name="nim" value="<?= htmlspecialchars($u_admin['nim']) ?>" required class="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-slate-100 outline-none transition-all font-medium">
+                                    </div>
+                                    <div class="md:col-span-2 space-y-2">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email</label>
+                                        <input type="email" name="email" value="<?= htmlspecialchars($u_admin['email']) ?>" required class="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-slate-100 outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-[2rem] border border-gray-100 p-6 lg:p-10 shadow-sm">
+                                <div class="flex items-center gap-4 mb-8">
+                                    <div class="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
+                                        <i data-lucide="lock" class="w-6 h-6"></i>
+                                    </div>
+                                    <h4 class="text-xl font-black text-gray-900">Keamanan Akun</h4>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password Lama</label>
+                                        <input type="password" name="old_password" placeholder="••••••••" class="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-red-50 outline-none transition-all font-medium">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password Baru</label>
+                                        <input type="password" name="password" placeholder="Min. 6 Karakter" class="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-50 outline-none transition-all font-medium">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-4 pb-10">
+                                <button type="submit" name="update_profile" class="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black transition-all transform hover:scale-105 shadow-xl flex items-center gap-3">
+                                    <i data-lucide="save" class="w-5 h-5"></i> Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <?php break; ?>
             <?php endswitch; ?>
         </main>
     </div>
